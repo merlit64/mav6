@@ -31,12 +31,15 @@ print(colored("Testing termcolor", "red"))
 
 
 # Telnet Server Test
+# Jay
 
 
 # SSH Server Test
+# Jay
 
 
 # SCP Server Test
+# Jay
 
 
 # TFTP Server Test
@@ -49,15 +52,19 @@ print(colored("Testing termcolor", "red"))
 
 
 # SNMP v2 Read Test
+# Paul
 
 
 # SNMP v2 Write Test
+# Paul
 
 
 # SNMP v3 Read Test
+# Paul
 
 
 # SNMP v3 Write Test
+# Paul
 
 
 # NTP v4 Server Test
