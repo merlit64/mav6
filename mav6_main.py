@@ -1,6 +1,6 @@
 ######## IMPORTED LIBRARIES ########
 import os
-
+from termcolor import colored
 
 ######## MACROS ########
 TEST_DEVICE = "8.8.8.8"
@@ -22,6 +22,8 @@ def ping_host(ipaddress):
 
 # Ping Server Test
 ping_host(TEST_DEVICE)
+print(colored("Testing termcolor", "red"))
+
 
 # Telnet Server Test
 
