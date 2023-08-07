@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 termcolor = "*"
+pyats = "*"
 
 [dev-packages]
 

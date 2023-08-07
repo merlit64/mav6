@@ -1,6 +1,7 @@
 ######## IMPORTED LIBRARIES ########
 import os
 from termcolor import colored
+from pyats.topology import loader
 
 ######## MACROS ########
 TEST_DEVICE = "8.8.8.8"
@@ -36,6 +37,13 @@ print(colored("Testing termcolor", "red"))
 
 # SSH Server Test
 # Jay
+testbed = loader.load('pyATS/testbed_ssh.yaml')
+
+device = testbed.devices['campus1-bn1']
+
+device.connect()
+
+device.execute('show version')
 
 
 # SCP Server Test
