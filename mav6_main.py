@@ -88,6 +88,7 @@ else:
         for varBind in varBinds:  # SNMP response contents
             print(colored("SNMPv2 Read Successful.  IF-MIB ifAdminStatus read, results below:", "green"))
             print(' = '.join([x.prettyPrint() for x in varBind]))
+print('\n')
 
 # SNMP v2 Write Test
 # Paul
@@ -109,17 +110,63 @@ else:
         print('%s at %s' % (errorStatus.prettyPrint(), varBinds[int(errorIndex)-1] if errorIndex else '?'))
     else:
         for varBind in varBinds:  # SNMP response contents
-            print(colored("SNMPv2 Write Successful.  sysDescr MIB read, results below:", "green"))
+            print(colored("SNMPv2 Write Successful.  IF-MIB ifAdminStatus write, results below:", "green"))
             print(' = '.join([x.prettyPrint() for x in varBind]))
+print('\n')
 
 
 
 # SNMP v3 Read Test
 # Paul
+iterator = ( getCmd(SnmpEngine(),
+           UsmUserData(userName="***REMOVED***", authKey='***REMOVED***', privKey='***REMOVED***', 
+                       authProtocol=usmHMACSHAAuthProtocol, privProtocol=usmAesCfb128Protocol),
+           UdpTransportTarget(('***REMOVED***', 161)),
+           ContextData(),
+           ObjectType(ObjectIdentity('IF-MIB', 'ifInOctets', 1)))
+)
+
+errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
+
+if errorIndication:
+    print(colored("SNMPv3 Read Failed.  Error message:", "red"))
+    print(errorIndication)
+elif errorStatus:
+    print(colored("SNMPv3 Read Failed.  Message:", "red"))
+    print('%s at %s' % (errorStatus.prettyPrint(),
+                        errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
+else:
+    for varBind in varBinds:
+        print(colored("SNMPv3 Read Successful.  IF-MIB ifInOctets read, results below:", "green"))
+        print(' = '.join([x.prettyPrint() for x in varBind]))
+print('\n')
 
 
 # SNMP v3 Write Test
 # Paul
+
+iterator = ( setCmd(SnmpEngine(),
+            UsmUserData(userName="***REMOVED***", authKey='***REMOVED***', privKey='***REMOVED***', 
+                       authProtocol=usmHMACSHAAuthProtocol, privProtocol=usmAesCfb128Protocol),
+            UdpTransportTarget(('***REMOVED***', 161)),
+            ContextData(),
+            ObjectType(ObjectIdentity('IF-MIB', 'ifAdminStatus', 6), "down"))
+)
+
+errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
+
+if errorIndication:
+    print(colored("SNMPv3 Write Failed.  Error message:", "red"))
+    print(errorIndication)
+elif errorStatus:
+    print(colored("SNMPv3 Write Failed.  Message:", "red"))
+    print('%s at %s' % (errorStatus.prettyPrint(),
+                        errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
+else:
+    for varBind in varBinds:
+        print(colored("SNMPv3 Write Successful.  IF-MIB ifInOctets read, results below:", "green"))
+        print(' = '.join([x.prettyPrint() for x in varBind]))
+print('\n')
 
 
 # NTP v4 Server Test
