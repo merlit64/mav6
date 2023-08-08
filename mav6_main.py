@@ -30,8 +30,8 @@ def ping_host(ipaddress):
 
 # SNMP Test Functions
 
-# SNMP over IPv6 tweaks
 class Udp6TransportTarget(cmdgen.UdpTransportTarget):
+    # SNMP over IPv6 tweaks
     transportDomain = udp6.domainName
 
     def __init__(self, transportAddr, timeout=1, retries=5):
@@ -47,6 +47,73 @@ class Udp6TransportTarget(cmdgen.UdpTransportTarget):
     def openClientMode(self):
         self.transport = udp6.Udp6SocketTransport().openClientMode()
         return self.transport
+    
+def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = "v2", action = "read", 
+              community="public", userName=None, authKey=None, privKey=None,  
+              authProtocol=usmHMACSHAAuthProtocol, privProtocol=usmAesCfb128Protocol ):
+    # This function places an SNMP read or write call using snmp v2 or v3 depending on the parameters
+    # ip - is the address of the device to be tested
+    # module - SNMP module, i.e. SNMPv2-MIB or IF-MIB
+    # parent - SNMP parent i.e. SysDescr or ifAdminStatus 
+    # suffix - if there are multiple modult/parents they are typically numbered with a suffix starting with 1
+    # mib_value - for SNMP writes, a value to change the MIB to
+    # port - SNMP UDP port number which is typicall 161
+    # version - Either "v2" or "v3", "v2" is the default
+    # action - Either "read" or "write", "read" is the default
+    # community - Only required for SNMP v2, "public by default"
+    # username - Only required for SNMP v3
+    # authKey - Only required for SNMPv3... it's the authentication key
+    # privKey - Only required for SNMPv3... It's the encryption private key
+    # authProtocol - Only required for SNMPv3... It's the authentication protocol, None, MD5 or a SHA algorithm
+    # privProtocol -  Only required for SNMPv3... It's the encryption protocol, DES, AES128, 192, 256, etc.
+    if (action == "read" and version == "v2"):
+        iterator = getCmd(SnmpEngine(),
+                        CommunityData(community),
+                        UdpTransportTarget((ip, port)),
+                        ContextData(),
+                        ObjectType(ObjectIdentity(module, parent, suffix)))
+
+    elif ( action == "write" and version == "v2" ):
+        iterator = setCmd(SnmpEngine(),
+                        CommunityData(community),
+                        UdpTransportTarget((ip, port)),
+                        ContextData(),
+                        ObjectType(ObjectIdentity(module, parent, suffix), mib_value))
+
+    elif ( action == "read" and version == "v3" ):
+        iterator = getCmd(SnmpEngine(),
+           UsmUserData(userName=userName, authKey=authKey, privKey=privKey, 
+                       authProtocol=authProtocol, privProtocol=privProtocol),
+           UdpTransportTarget((ip, port)),
+           ContextData(),
+           ObjectType(ObjectIdentity(module, parent, suffix)))
+
+    elif ( action == "Write" and version == "v3" ):
+        iterator = setCmd(SnmpEngine(),
+            UsmUserData(userName=userName, authKey=authKey, privKey=privKey, 
+                       authProtocol=authProtocol, privProtocol=privProtocol),
+            UdpTransportTarget((ip, port)),
+            ContextData(),
+            ObjectType(ObjectIdentity(module, parent, suffix), mib_value))
+
+    else:
+        print('Incorrect syntax for action (use "read" or "write") or version (use "v2" or "v3").')
+        exit()
+
+    errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
+
+    if errorIndication:  # SNMP engine errors
+        print(colored("SNMP" + version + " " + action + " Failed.  Error message:", "red"))
+        print(errorIndication)
+    else:
+        if errorStatus:  # SNMP agent errors
+            print(colored("SNMP" + version + " " + action + " Failed.  Error message:", "red"))
+            print('%s at %s' % (errorStatus.prettyPrint(), varBinds[int(errorIndex)-1] if errorIndex else '?'))
+        else:
+            for varBind in varBinds:  # SNMP response contents
+                print(colored("SNMP" + version + " " + action + " Succeeded!.  Results are below:", "green"))
+                print(' = '.join([x.prettyPrint() for x in varBind]))
+    print('\n')
 
 
 ######## MAIN PROGRAM ########
@@ -118,7 +185,7 @@ print('\n')
 
 iterator = setCmd(SnmpEngine(),
                   CommunityData('***REMOVED***rw'),
-                  UdpTransportTarget(('2005:1117::1', 161)),
+                  UdpTransportTarget(('***REMOVED***', 161)),
                   ContextData(),
                   ObjectType(ObjectIdentity('IF-MIB', 'ifAdminStatus', 5), "down"))
 
