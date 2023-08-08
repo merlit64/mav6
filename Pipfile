@@ -6,6 +6,9 @@ name = "pypi"
 [packages]
 termcolor = "*"
 pyats = "*"
+asyncio = "*"
+pysnmp = "*"
+snmpclitools-lextudio = "*"
 
 [dev-packages]
 

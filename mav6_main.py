@@ -1,7 +1,15 @@
 ######## IMPORTED LIBRARIES ########
-import os
 from termcolor import colored
+
+# pyATS
 from pyats.topology import loader
+
+# for ping test
+import os
+
+# for SNMP tests
+from pysnmp.hlapi import *
+
 
 ######## MACROS ########
 TEST_DEVICE = "8.8.8.8"
@@ -61,10 +69,29 @@ device.execute('show version')
 
 # SNMP v2 Read Test
 # Paul
+iterator = getCmd(SnmpEngine(),
+                  CommunityData('***REMOVED***'),
+                  UdpTransportTarget(('***REMOVED***', 161)),
+                  ContextData(),
+                  ObjectType(ObjectIdentity('SNMPv2-MIB', 'sysDescr', 0)))
 
+errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
+
+if errorIndication:  # SNMP engine errors
+    print(colored("SNMPv2 Read Failed.  Error message:", "red"))
+    print(errorIndication)
+else:
+    if errorStatus:  # SNMP agent errors
+        print(colored("SNMPv2 Read Failed.  Error message:", "red"))
+        print('%s at %s' % (errorStatus.prettyPrint(), varBinds[int(errorIndex)-1] if errorIndex else '?'))
+    else:
+        for varBind in varBinds:  # SNMP response contents
+            print(colored("SNMPv2 Read Successful.  sysDescr MIB read, results below:", "green"))
+            print(' = '.join([x.prettyPrint() for x in varBind]))
 
 # SNMP v2 Write Test
 # Paul
+
 
 
 # SNMP v3 Read Test
@@ -85,8 +112,6 @@ device.execute('show version')
 ### CLIENT TESTS ###
 
 # Ping Client Test
-ping_host(TEST_DEVICE)
-print(colored("Testing termcolor", "red"))
 
 
 # Telnet Client Test
