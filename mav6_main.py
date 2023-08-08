@@ -9,6 +9,9 @@ import os
 
 # for SNMP tests
 from pysnmp.hlapi import *
+from pysnmp.entity.rfc3413.oneliner import cmdgen
+from pysnmp.carrier.asynsock.dgram import udp6
+import socket
 
 
 ######## MACROS ########
@@ -24,6 +27,26 @@ def ping_host(ipaddress):
         return True
     else:
         return False
+
+# SNMP Test Functions
+
+# SNMP over IPv6 tweaks
+class Udp6TransportTarget(cmdgen.UdpTransportTarget):
+    transportDomain = udp6.domainName
+
+    def __init__(self, transportAddr, timeout=1, retries=5):
+        self.transportAddr = (
+            socket.getaddrinfo(transportAddr[0], transportAddr[1],
+                               socket.AF_INET6,
+                               socket.SOCK_DGRAM,
+                               socket.IPPROTO_UDP)[0][4]
+            )
+        self.timeout = timeout
+        self.retries = retries
+
+    def openClientMode(self):
+        self.transport = udp6.Udp6SocketTransport().openClientMode()
+        return self.transport
 
 
 ######## MAIN PROGRAM ########
@@ -95,7 +118,7 @@ print('\n')
 
 iterator = setCmd(SnmpEngine(),
                   CommunityData('***REMOVED***rw'),
-                  UdpTransportTarget(('***REMOVED***', 161)),
+                  UdpTransportTarget(('2005:1117::1', 161)),
                   ContextData(),
                   ObjectType(ObjectIdentity('IF-MIB', 'ifAdminStatus', 5), "down"))
 
