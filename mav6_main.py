@@ -15,7 +15,7 @@ import socket
 
 
 ######## MACROS ########
-TEST_DEVICE = "8.8.8.8"
+TEST_DEVICE = "***REMOVED***"
 
 
 ######## FUNCTIONS ########
@@ -159,55 +159,18 @@ device.execute('show version')
 
 # SNMP v2 Read Test
 # Paul
-iterator = getCmd(SnmpEngine(),
-                  CommunityData('***REMOVED***'),
-                  UdpTransportTarget(('***REMOVED***', 161)),
-                  ContextData(),
-                  ObjectType(ObjectIdentity('IF-MIB', 'ifAdminStatus', 5)))
+snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAdminStatus', 5, version = "v2", action = "read", community="***REMOVED***" )
 
-errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
-
-if errorIndication:  # SNMP engine errors
-    print(colored("SNMPv2 Read Failed.  Error message:", "red"))
-    print(errorIndication)
-else:
-    if errorStatus:  # SNMP agent errors
-        print(colored("SNMPv2 Read Failed.  Error message:", "red"))
-        print('%s at %s' % (errorStatus.prettyPrint(), varBinds[int(errorIndex)-1] if errorIndex else '?'))
-    else:
-        for varBind in varBinds:  # SNMP response contents
-            print(colored("SNMPv2 Read Successful.  IF-MIB ifAdminStatus read, results below:", "green"))
-            print(' = '.join([x.prettyPrint() for x in varBind]))
-print('\n')
 
 # SNMP v2 Write Test
 # Paul
-
-iterator = setCmd(SnmpEngine(),
-                  CommunityData('***REMOVED***rw'),
-                  UdpTransportTarget(('***REMOVED***', 161)),
-                  ContextData(),
-                  ObjectType(ObjectIdentity('IF-MIB', 'ifAdminStatus', 5), "down"))
-
-errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
-
-if errorIndication:  # SNMP engine errors
-    print(colored("SNMPv2 Write Failed.  Error message:", "red"))
-    print(errorIndication)
-else:
-    if errorStatus:  # SNMP agent errors
-        print(colored("SNMPv2 Write Failed.  Message:", "red"))
-        print('%s at %s' % (errorStatus.prettyPrint(), varBinds[int(errorIndex)-1] if errorIndex else '?'))
-    else:
-        for varBind in varBinds:  # SNMP response contents
-            print(colored("SNMPv2 Write Successful.  IF-MIB ifAdminStatus write, results below:", "green"))
-            print(' = '.join([x.prettyPrint() for x in varBind]))
-print('\n')
-
+snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAdminStatus', 5, mib_value="up", version = "v2", action = "write", community="***REMOVED***rw" )
 
 
 # SNMP v3 Read Test
 # Paul
+
+
 iterator = ( getCmd(SnmpEngine(),
            UsmUserData(userName="***REMOVED***", authKey='***REMOVED***', privKey='***REMOVED***', 
                        authProtocol=usmHMACSHAAuthProtocol, privProtocol=usmAesCfb128Protocol),
