@@ -1,5 +1,6 @@
 ######## IMPORTED LIBRARIES ########
 from termcolor import colored
+from secrets import *
 
 # pyATS
 from pyats.topology import loader
@@ -14,8 +15,6 @@ from pysnmp.carrier.asynsock.dgram import udp6
 import socket
 
 
-######## MACROS ########
-TEST_DEVICE = "***REMOVED***"
 
 
 ######## FUNCTIONS ########
@@ -170,13 +169,13 @@ snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAdminStatus', 5, mib_value="up", version = 
 # SNMP v3 Read Test
 # Paul
 snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "read", userName="***REMOVED***",
-          authKey="***REMOVED***", privKey="***REMOVED***"  )
+          authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
 '''
 iterator = ( getCmd(SnmpEngine(),
-           UsmUserData(userName="***REMOVED***", authKey='***REMOVED***', privKey='***REMOVED***', 
+           UsmUserData(userName="***REMOVED***", authKey=AUTH_KEY, privKey=PRIV_KEY, 
                        authProtocol=usmHMACSHAAuthProtocol, privProtocol=usmAesCfb128Protocol),
-           UdpTransportTarget(('***REMOVED***', 161)),
+           UdpTransportTarget((TEST_DEVICE, 161)),
            ContextData(),
            ObjectType(ObjectIdentity('IF-MIB', 'ifInOctets', 1)))
 )
@@ -201,9 +200,9 @@ print('\n')
 # Paul
 
 iterator = ( setCmd(SnmpEngine(),
-            UsmUserData(userName="***REMOVED***", authKey='***REMOVED***', privKey='***REMOVED***', 
+            UsmUserData(userName="***REMOVED***", authKey=AUTH_KEY, privKey=PRIV_KEY, 
                        authProtocol=usmHMACSHAAuthProtocol, privProtocol=usmAesCfb128Protocol),
-            UdpTransportTarget(('***REMOVED***', 161)),
+            UdpTransportTarget((TEST_DEVICE, 161)),
             ContextData(),
             ObjectType(ObjectIdentity('IF-MIB', 'ifAdminStatus', 6), "down"))
 )
