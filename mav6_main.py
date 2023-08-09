@@ -72,6 +72,7 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
         ip2 = ipaddr.IPAddress(ip)
         #print(colored(("IP address is good.  Version is IPv%s" % ip2.version), "green"))
     except:
+        # This is not an IPv4 or an IPv6 address
         print(colored("IP address is malformed... Exiting", "red"))
         exit()
 
@@ -169,12 +170,12 @@ device = testbed.devices['campus1-bn1']
 
 # SNMP v2 Read Test
 # Paul
-snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAdminStatus', 5, version = "v2", action = "read", community=COM_RO )
+snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 89, version = "v2", action = "read", community=COM_RO )
 
 
 # SNMP v2 Write Test
 # Paul
-snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAdminStatus', 5, mib_value="down", version = "v2", action = "write", community=COM_RW )
+snmp_call( TEST_DEVICE, 'SNMPv2-MIB', 'sysContact', 0, mib_value="mav6 snmpv2test", version = "v2", action = "write", community=COM_RW )
 
 
 # SNMP v3 Read Test
@@ -185,7 +186,7 @@ snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "rea
 
 # SNMP v3 Write Test
 # Paul
-snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAdminStatus', 6, mib_value="up", version = "v3", action = "write", 
+snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, mib_value="description mav6", version = "v3", action = "write", 
           userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
 
