@@ -173,7 +173,7 @@ snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "rea
 
 '''
 iterator = ( getCmd(SnmpEngine(),
-           UsmUserData(userName="***REMOVED***", authKey=AUTH_KEY, privKey=PRIV_KEY, 
+           UsmUserData(userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY, 
                        authProtocol=usmHMACSHAAuthProtocol, privProtocol=usmAesCfb128Protocol),
            UdpTransportTarget((TEST_DEVICE, 161)),
            ContextData(),
