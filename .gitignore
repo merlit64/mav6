@@ -163,5 +163,6 @@ cython_debug/
 pyATS/
 
 # Passwords and IP addresses
-passwords.py
+passwords.txt
+secrets.py
 
