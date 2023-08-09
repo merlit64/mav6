@@ -168,7 +168,7 @@ snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAdminStatus', 5, mib_value="up", version = 
 
 # SNMP v3 Read Test
 # Paul
-snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "read", userName="***REMOVED***",
+snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "read", userName=SNMP_USER,
           authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
 '''
@@ -200,7 +200,7 @@ print('\n')
 # Paul
 
 iterator = ( setCmd(SnmpEngine(),
-            UsmUserData(userName="***REMOVED***", authKey=AUTH_KEY, privKey=PRIV_KEY, 
+            UsmUserData(userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY, 
                        authProtocol=usmHMACSHAAuthProtocol, privProtocol=usmAesCfb128Protocol),
             UdpTransportTarget((TEST_DEVICE, 161)),
             ContextData(),
