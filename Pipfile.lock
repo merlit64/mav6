@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "1f970958e821d80a14ce7247ba1db1c36ed9d0d5238ca7f06f3393a680755274"
+            "sha256": "4c72aab907af31b6d18807348e16008783bfcf9752e1baf1f7cedb7637879804"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -18,11 +18,11 @@
     "default": {
         "aiofiles": {
             "hashes": [
-                "sha256:9312414ae06472eb6f1d163f555e466a23aed1c8f60c30cccf7121dba2e53eb2",
-                "sha256:edd247df9a19e0db16534d4baaf536d6609a43e1de5401d7a4c1c148753a1635"
+                "sha256:7a321e787cb3839e7d70f56121bf9197a1980609a0fe06a6f96c573406ce4fca",
+                "sha256:d7adbeef4bada163e70bd3163866680332f622b4437d9d8246bd74b6d791d83a"
             ],
-            "markers": "python_version >= '3.7' and python_version < '4.0'",
-            "version": "==23.1.0"
+            "markers": "python_version >= '3.7'",
+            "version": "==23.2.0"
         },
         "aiohttp": {
             "hashes": [
@@ -467,6 +467,13 @@
             ],
             "markers": "python_version >= '3.5'",
             "version": "==3.4"
+        },
+        "ipaddr": {
+            "hashes": [
+                "sha256:4092dfe667588d16aa12b59acb7c8a4024e5dcb23a681cd0b0b602373eca88d6"
+            ],
+            "index": "pypi",
+            "version": "==2.2.0"
         },
         "jinja2": {
             "hashes": [

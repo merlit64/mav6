@@ -1,6 +1,7 @@
 ######## IMPORTED LIBRARIES ########
 from termcolor import colored
 from secrets import *
+import ipaddr
 
 # pyATS
 from pyats.topology import loader
@@ -65,6 +66,16 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
     # privKey - Only required for SNMPv3... It's the encryption private key
     # authProtocol - Only required for SNMPv3... It's the authentication protocol, None, MD5 or a SHA algorithm
     # privProtocol -  Only required for SNMPv3... It's the encryption protocol, DES, AES128, 192, 256, etc.
+    
+    # Check for IPv4 or IPv6 address
+    try:
+        ip2 = ipaddr.IPAddress(ip)
+        #print(colored(("IP address is good.  Version is IPv%s" % ip2.version), "green"))
+    except:
+        print(colored("IP address is malformed... Exiting", "red"))
+        exit()
+
+    
     if (action == "read" and version == "v2"):
         iterator = getCmd(SnmpEngine(),
                         CommunityData(community),
@@ -87,7 +98,7 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
            ContextData(),
            ObjectType(ObjectIdentity(module, parent, suffix)))
 
-    elif ( action == "Write" and version == "v3" ):
+    elif ( action == "write" and version == "v3" ):
         iterator = setCmd(SnmpEngine(),
             UsmUserData(userName=userName, authKey=authKey, privKey=privKey, 
                        authProtocol=authProtocol, privProtocol=privProtocol),
@@ -113,7 +124,7 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
                 print(colored("SNMP" + version + " " + action + " Succeeded!.  Results are below:", "green"))
                 print(' = '.join([x.prettyPrint() for x in varBind]))
     print('\n')
-
+    return 1
 
 ######## MAIN PROGRAM ########
 
@@ -138,9 +149,9 @@ testbed = loader.load('pyATS/testbed_ssh.yaml')
 
 device = testbed.devices['campus1-bn1']
 
-device.connect()
+#device.connect()
 
-device.execute('show version')
+#device.execute('show version')
 
 
 # SCP Server Test
@@ -163,64 +174,19 @@ snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAdminStatus', 5, version = "v2", action = "
 
 # SNMP v2 Write Test
 # Paul
-snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAdminStatus', 5, mib_value="up", version = "v2", action = "write", community=COM_RW )
+snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAdminStatus', 5, mib_value="down", version = "v2", action = "write", community=COM_RW )
 
 
 # SNMP v3 Read Test
 # Paul
-snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "read", userName=SNMP_USER,
-          authKey=AUTH_KEY, privKey=PRIV_KEY  )
+snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "read", 
+          userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
-'''
-iterator = ( getCmd(SnmpEngine(),
-           UsmUserData(userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY, 
-                       authProtocol=usmHMACSHAAuthProtocol, privProtocol=usmAesCfb128Protocol),
-           UdpTransportTarget((TEST_DEVICE, 161)),
-           ContextData(),
-           ObjectType(ObjectIdentity('IF-MIB', 'ifInOctets', 1)))
-)
-
-errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
-
-if errorIndication:
-    print(colored("SNMPv3 Read Failed.  Error message:", "red"))
-    print(errorIndication)
-elif errorStatus:
-    print(colored("SNMPv3 Read Failed.  Message:", "red"))
-    print('%s at %s' % (errorStatus.prettyPrint(),
-                        errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
-else:
-    for varBind in varBinds:
-        print(colored("SNMPv3 Read Successful.  IF-MIB ifInOctets read, results below:", "green"))
-        print(' = '.join([x.prettyPrint() for x in varBind]))
-print('\n')
-'''
 
 # SNMP v3 Write Test
 # Paul
-
-iterator = ( setCmd(SnmpEngine(),
-            UsmUserData(userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY, 
-                       authProtocol=usmHMACSHAAuthProtocol, privProtocol=usmAesCfb128Protocol),
-            UdpTransportTarget((TEST_DEVICE, 161)),
-            ContextData(),
-            ObjectType(ObjectIdentity('IF-MIB', 'ifAdminStatus', 6), "down"))
-)
-
-errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
-
-if errorIndication:
-    print(colored("SNMPv3 Write Failed.  Error message:", "red"))
-    print(errorIndication)
-elif errorStatus:
-    print(colored("SNMPv3 Write Failed.  Message:", "red"))
-    print('%s at %s' % (errorStatus.prettyPrint(),
-                        errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
-else:
-    for varBind in varBinds:
-        print(colored("SNMPv3 Write Successful.  IF-MIB ifInOctets read, results below:", "green"))
-        print(' = '.join([x.prettyPrint() for x in varBind]))
-print('\n')
+snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAdminStatus', 6, mib_value="up", version = "v3", action = "write", 
+          userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
 
 # NTP v4 Server Test
