@@ -169,8 +169,10 @@ snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAdminStatus', 5, mib_value="up", version = 
 
 # SNMP v3 Read Test
 # Paul
+snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "read", userName="***REMOVED***",
+          authKey="***REMOVED***", privKey="***REMOVED***"  )
 
-
+'''
 iterator = ( getCmd(SnmpEngine(),
            UsmUserData(userName="***REMOVED***", authKey='***REMOVED***', privKey='***REMOVED***', 
                        authProtocol=usmHMACSHAAuthProtocol, privProtocol=usmAesCfb128Protocol),
@@ -193,7 +195,7 @@ else:
         print(colored("SNMPv3 Read Successful.  IF-MIB ifInOctets read, results below:", "green"))
         print(' = '.join([x.prettyPrint() for x in varBind]))
 print('\n')
-
+'''
 
 # SNMP v3 Write Test
 # Paul

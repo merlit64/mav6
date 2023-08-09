@@ -161,3 +161,7 @@ cython_debug/
 
 # pyATS yaml directory
 pyATS/
+
+# Passwords and IP addresses
+passwords.py
+
