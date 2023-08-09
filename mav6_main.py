@@ -158,12 +158,12 @@ device.execute('show version')
 
 # SNMP v2 Read Test
 # Paul
-snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAdminStatus', 5, version = "v2", action = "read", community="***REMOVED***" )
+snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAdminStatus', 5, version = "v2", action = "read", community=COM_RO )
 
 
 # SNMP v2 Write Test
 # Paul
-snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAdminStatus', 5, mib_value="up", version = "v2", action = "write", community="***REMOVED***rw" )
+snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAdminStatus', 5, mib_value="up", version = "v2", action = "write", community=COM_RW )
 
 
 # SNMP v3 Read Test
