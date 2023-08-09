@@ -165,4 +165,4 @@ pyATS/
 # Passwords and IP addresses
 passwords.txt
 secrets.py
-
+configurations.txt

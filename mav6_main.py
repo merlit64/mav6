@@ -11,7 +11,7 @@ import os
 
 # for SNMP tests
 from pysnmp.hlapi import *
-from pysnmp.entity.rfc3413.oneliner import cmdgen
+#from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.carrier.asynsock.dgram import udp6
 import socket
 
@@ -20,8 +20,17 @@ import socket
 
 ######## FUNCTIONS ########
 
-def ping_host(ipaddress):
-    response = os.system("ping -c 1 " + ipaddress)
+def ping_host(ip):
+    try:
+        ip2 = ipaddr.IPAddress(ip)
+    except:
+        # This is not an IPv4 or an IPv6 address
+        print(colored("IP address is malformed... Exiting", "red"))
+        exit()
+    if ( ip2.version == 4 ):
+        response = os.system("ping -c 1 " + ip)
+    else:
+        response = os.system("ping6 -c 1 " + ip)
     if (response == 0):
         print("Reachability Check passed...")
         return True
@@ -30,11 +39,11 @@ def ping_host(ipaddress):
 
 # SNMP Test Functions
 
-class Udp6TransportTarget(cmdgen.UdpTransportTarget):
+class Udp6TransportTarget(UdpTransportTarget):
     # SNMP over IPv6 tweaks
     transportDomain = udp6.domainName
 
-    def __init__(self, transportAddr, timeout=1, retries=5):
+    def __init__(self, transportAddr, timeout=1, retries=5, tagList=b'', iface=''):
         self.transportAddr = (
             socket.getaddrinfo(transportAddr[0], transportAddr[1],
                                socket.AF_INET6,
@@ -43,6 +52,8 @@ class Udp6TransportTarget(cmdgen.UdpTransportTarget):
             )
         self.timeout = timeout
         self.retries = retries
+        self.tagList = tagList
+        self.iface = iface
 
     def openClientMode(self):
         self.transport = udp6.Udp6SocketTransport().openClientMode()
@@ -70,24 +81,26 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
     # Check for IPv4 or IPv6 address
     try:
         ip2 = ipaddr.IPAddress(ip)
-        #print(colored(("IP address is good.  Version is IPv%s" % ip2.version), "green"))
+        print(colored(("IP address is good.  Version is IPv%s" % ip2.version), "green"))
     except:
         # This is not an IPv4 or an IPv6 address
         print(colored("IP address is malformed... Exiting", "red"))
         exit()
 
-    
+    #transport_target_v4 = UdpTransportTarget(("10.112.1.201", port))
+    #transport_target_v6 = Udp6TransportTarget((ip, port), '1.3.6.1.2.1.1.1.0') 
+    # (1, 3, 6, 1, 6, 1, 1)
     if (action == "read" and version == "v2"):
         iterator = getCmd(SnmpEngine(),
                         CommunityData(community),
-                        UdpTransportTarget((ip, port)),
+                        UdpTransportTarget((ip, port)) if ip2.version == 4 else Udp6TransportTarget((ip, port)),
                         ContextData(),
                         ObjectType(ObjectIdentity(module, parent, suffix)))
 
     elif ( action == "write" and version == "v2" ):
         iterator = setCmd(SnmpEngine(),
                         CommunityData(community),
-                        UdpTransportTarget((ip, port)),
+                        UdpTransportTarget((ip, port)) if ip2.version == 4 else Udp6TransportTarget((ip, port)),
                         ContextData(),
                         ObjectType(ObjectIdentity(module, parent, suffix), mib_value))
 
@@ -95,7 +108,7 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
         iterator = getCmd(SnmpEngine(),
            UsmUserData(userName=userName, authKey=authKey, privKey=privKey, 
                        authProtocol=authProtocol, privProtocol=privProtocol),
-           UdpTransportTarget((ip, port)),
+           UdpTransportTarget((ip, port)) if ip2.version == 4 else Udp6TransportTarget((ip, port)),
            ContextData(),
            ObjectType(ObjectIdentity(module, parent, suffix)))
 
@@ -103,7 +116,7 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
         iterator = setCmd(SnmpEngine(),
             UsmUserData(userName=userName, authKey=authKey, privKey=privKey, 
                        authProtocol=authProtocol, privProtocol=privProtocol),
-            UdpTransportTarget((ip, port)),
+            UdpTransportTarget((ip, port)) if ip2.version == 4 else Udp6TransportTarget((ip, port)),
             ContextData(),
             ObjectType(ObjectIdentity(module, parent, suffix), mib_value))
 
@@ -137,7 +150,6 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
 
 # Ping Server Test
 ping_host(TEST_DEVICE)
-print(colored("Testing termcolor", "red"))
 
 
 # Telnet Server Test
@@ -170,12 +182,12 @@ device = testbed.devices['campus1-bn1']
 
 # SNMP v2 Read Test
 # Paul
-snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 89, version = "v2", action = "read", community=COM_RO )
+snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, version = "v2", action = "read", community=COM_RO )
 
 
 # SNMP v2 Write Test
 # Paul
-snmp_call( TEST_DEVICE, 'SNMPv2-MIB', 'sysContact', 0, mib_value="mav6 snmpv2test", version = "v2", action = "write", community=COM_RW )
+snmp_call( TEST_DEVICE, 'SNMPv2-MIB', 'sysContact', 0, mib_value="mav6 snmpv2test worked", version = "v2", action = "write", community=COM_RW )
 
 
 # SNMP v3 Read Test
@@ -186,7 +198,7 @@ snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "rea
 
 # SNMP v3 Write Test
 # Paul
-snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, mib_value="description mav6", version = "v3", action = "write", 
+snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, mib_value="mav6", version = "v3", action = "write", 
           userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
 
