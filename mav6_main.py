@@ -11,11 +11,8 @@ import os
 
 # for SNMP tests
 from pysnmp.hlapi import *
-#from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.carrier.asynsock.dgram import udp6
 import socket
-
-
 
 
 ######## FUNCTIONS ########
@@ -87,9 +84,7 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
         print(colored("IP address is malformed... Exiting", "red"))
         exit()
 
-    #transport_target_v4 = UdpTransportTarget(("10.112.1.201", port))
-    #transport_target_v6 = Udp6TransportTarget((ip, port), '1.3.6.1.2.1.1.1.0') 
-    # (1, 3, 6, 1, 6, 1, 1)
+    # Build SNMP get or set command
     if (action == "read" and version == "v2"):
         iterator = getCmd(SnmpEngine(),
                         CommunityData(community),
@@ -124,8 +119,10 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
         print('Incorrect syntax for action (use "read" or "write") or version (use "v2" or "v3").')
         exit()
 
+    # Execute the command and capture any errors
     errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
 
+    # Display error or Success messages
     if errorIndication:  # SNMP engine errors
         print(colored("SNMP" + version + " " + action + " Failed.  Error message:", "red"))
         print(errorIndication)
@@ -162,9 +159,9 @@ testbed = loader.load('pyATS/testbed_ssh.yaml')
 
 device = testbed.devices['campus1-bn1']
 
-#device.connect()
+device.connect()
 
-#device.execute('show version')
+device.execute('show version')
 
 
 # SCP Server Test
