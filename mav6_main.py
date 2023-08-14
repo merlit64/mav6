@@ -185,7 +185,7 @@ connect_host('testbed_ssh.yaml', 'C8000V', 'show version')
 
 
 # SNMP v2 Read Test
-# Paul
+# Paul Merlitti
 # snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, version = "v2", action = "read", community=COM_RO )
 
 

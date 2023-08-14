@@ -10,6 +10,7 @@ asyncio = "*"
 pysnmp = "*"
 snmpclitools-lextudio = "*"
 ipaddr = "*"
+pysnmp-mibs = "*"
 
 [dev-packages]
 
