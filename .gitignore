@@ -164,5 +164,5 @@ pyATS/
 
 # Passwords and IP addresses
 passwords.txt
-secrets.py
+secrets_1.py
 configurations.txt
