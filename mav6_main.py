@@ -35,15 +35,15 @@ def ping_host(ip):
         return False
     
 # pyATS Connection Function
-# testbed - name of .yaml testbed file
 # device - hostname of device being tested
+# protocol - connection protocol being tested (telnet or ssh)
 # command - command used to test connection
-def connect_host(testbed = '', device = '', command = 'show version'):
-    testbed = loader.load('pyATS/' + testbed)
+def connect_host(device = '', protocol = '', command = 'show version'):
+    testbed = loader.load('pyATS/testbed_ssh.yaml')
 
     device = testbed.devices[device]
 
-    device.connect()
+    device.connect(via = protocol)
 
     device.execute(command)
 
@@ -164,11 +164,11 @@ ping_host(TEST_DEVICE)
 
 # Telnet Server Test
 # Jay
-connect_host('testbed_telnet.yaml', 'C8000V', 'show version')
+connect_host('mgmt', 'telnet', 'show version')
 
 # SSH Server Test
 # Jay
-connect_host('testbed_ssh.yaml', 'C8000V', 'show version')
+connect_host('mgmt', 'ssh', 'show version')
 
 
 # SCP Server Test

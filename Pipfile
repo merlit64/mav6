@@ -11,6 +11,8 @@ pysnmp = "*"
 snmpclitools-lextudio = "*"
 ipaddr = "*"
 pysnmp-mibs = "*"
+scp = "*"
+paramiko = "*"
 
 [dev-packages]
 
