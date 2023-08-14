@@ -1,6 +1,6 @@
 ######## IMPORTED LIBRARIES ########
 from termcolor import colored
-from secrets import *
+from secrets_1 import *
 import ipaddr
 
 # pyATS
@@ -33,6 +33,19 @@ def ping_host(ip):
         return True
     else:
         return False
+    
+# pyATS Connection Function
+# testbed - name of .yaml testbed file
+# device - hostname of device being tested
+# command - command used to test connection
+def connect_host(testbed = '', device = '', command = 'show version'):
+    testbed = loader.load('pyATS/' + testbed)
+
+    device = testbed.devices[device]
+
+    device.connect()
+
+    device.execute(command)
 
 # SNMP Test Functions
 
@@ -151,17 +164,11 @@ ping_host(TEST_DEVICE)
 
 # Telnet Server Test
 # Jay
-
+connect_host('testbed_telnet.yaml', 'C8000V', 'show version')
 
 # SSH Server Test
 # Jay
-testbed = loader.load('pyATS/testbed_ssh.yaml')
-
-device = testbed.devices['campus1-bn1']
-
-device.connect()
-
-device.execute('show version')
+connect_host('testbed_ssh.yaml', 'C8000V', 'show version')
 
 
 # SCP Server Test
@@ -179,24 +186,24 @@ device.execute('show version')
 
 # SNMP v2 Read Test
 # Paul
-snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, version = "v2", action = "read", community=COM_RO )
+# snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, version = "v2", action = "read", community=COM_RO )
 
 
 # SNMP v2 Write Test
 # Paul
-snmp_call( TEST_DEVICE, 'SNMPv2-MIB', 'sysContact', 0, mib_value="mav6 snmpv2test worked", version = "v2", action = "write", community=COM_RW )
+#snmp_call( TEST_DEVICE, 'SNMPv2-MIB', 'sysContact', 0, mib_value="mav6 snmpv2test worked", version = "v2", action = "write", community=COM_RW )
 
 
 # SNMP v3 Read Test
 # Paul
-snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "read", 
-          userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
+#snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "read", 
+          #userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
 
 # SNMP v3 Write Test
 # Paul
-snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, mib_value="mav6", version = "v3", action = "write", 
-          userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
+#snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, mib_value="mav6", version = "v3", action = "write", 
+          #userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
 
 # NTP v4 Server Test
