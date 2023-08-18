@@ -216,52 +216,80 @@ connect_host('mgmt', 'ssh', 'show version')
 ### CLIENT TESTS ###
 
 # Ping Client Test
-
+# Linux Server
+# Python Script
+# IOSXE Device
 
 # Telnet Client Test
-
+# Linux Server
+# Python Script
+# IOSXE Device
 
 # SSH Client Test
+# Linux Server
+# Python Script
+# IOSXE Device
 
 
 # DNS Client Test
+# Linux Server
+# Windows Server
 
 
 # SCP client Test
+# Linux Server
+# IOSXE Device
 
 
 # TFTP client Test
+# Linux Server
+# IOSXE Device
 
 
 # HTTP client Test
+# Linux Server
+# Windows Server
+# IOSXE Device
 
 
 # HTTPS client Test
+# Linux Server
+# Windows Server
+# # IOSXE Device
 
 
 # SNMP v2 Trap Test
-
+# Python Library
 
 # SNMP v3 Trap Test
-
+# Python Library?
 
 # NTP v4 Client Test
+# Linux Server
+# Python Script?
+# IOSXE Device
 
 
 # DHCP Client Test
-
+# Linux Server
+# Windows Server
 
 # Syslog Client Test
+# Linux Server
+# Python Script
+# IOSXE Device
 
 
 # Streaming Telemetry Test
 
 
 # Netflow Tests
+# Linux Server Netflow collectors
+# Python Script netflow collector
 
 
 # TACACS+ Test
-
+# ISE
 
 # RADIUS Test
-
+# ISE
