@@ -5,6 +5,7 @@ import ipaddr
 
 # pyATS
 from pyats.topology import loader
+from pyats.utils.fileutils import FileUtils
 
 # for ping test
 import os
@@ -13,6 +14,10 @@ import os
 from pysnmp.hlapi import *
 from pysnmp.carrier.asynsock.dgram import udp6
 import socket
+
+# for NTP test
+import ntplib
+from time import ctime
 
 
 ######## FUNCTIONS ########
@@ -38,14 +43,17 @@ def ping_host(ip):
 # device - hostname of device being tested
 # protocol - connection protocol being tested (telnet or ssh)
 # command - command used to test connection
-def connect_host(device = '', protocol = '', command = 'show version'):
-    testbed = loader.load('pyATS/testbed_ssh.yaml')
+def connect_host(device = '', protocol = '', command = ' '):
+    testbed = loader.load('pyATS/testbed.yaml')
 
     device = testbed.devices[device]
 
     device.connect(via = protocol)
 
-    device.execute(command)
+    if (not command.isspace):
+        device.execute(command)
+    
+    
 
 # SNMP Test Functions
 
@@ -164,16 +172,15 @@ ping_host(TEST_DEVICE)
 
 # Telnet Server Test
 # Jay
-connect_host('mgmt', 'telnet', 'show version')
+#connect_host('mgmt', 'telnet')
 
 # SSH Server Test
 # Jay
-connect_host('mgmt', 'ssh', 'show version')
+#connect_host('mgmt', 'ssh')
 
 
 # SCP Server Test
 # Jay
-
 
 # TFTP Server Test
 
@@ -207,7 +214,11 @@ connect_host('mgmt', 'ssh', 'show version')
 
 
 # NTP v4 Server Test
+# Jay
 
+c = ntplib.NTPClient()
+response = c.request(TEST_DEVICE, version = 4)
+print("NTP TIME IS " + ctime(response.tx_time) + " FROM NTP SERVER " + TEST_DEVICE)
 
 # DHCP Server Test
 
