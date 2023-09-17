@@ -14,6 +14,7 @@ pysnmp-mibs = "*"
 scp = "*"
 paramiko = "*"
 ntplib = "*"
+genie = "*"
 
 [dev-packages]
 

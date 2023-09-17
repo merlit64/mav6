@@ -19,8 +19,10 @@ import socket
 import ntplib
 from time import ctime
 
-
-######## FUNCTIONS ########
+# for file transfer tests
+from genie.libs.filetransferutils import FileServer
+    
+######## FUNCTIONS #######
 
 def ping_host(ip):
     try:
@@ -38,6 +40,7 @@ def ping_host(ip):
         return True
     else:
         return False
+
     
 # pyATS Connection Function
 # device - hostname of device being tested
@@ -46,9 +49,9 @@ def ping_host(ip):
 def connect_host(device = '', protocol = '', command = ' '):
     testbed = loader.load('pyATS/testbed.yaml')
 
-    device = testbed.devices[device]
+    test = testbed.devices[device]
 
-    device.connect(via = protocol)
+    test.connect(via = protocol)
 
     if (not command.isspace):
         device.execute(command)
@@ -180,7 +183,17 @@ ping_host(TEST_DEVICE)
 
 
 # SCP Server Test
-# Jay
+
+testbed = loader.load('pyATS/testbed.yaml')
+
+test = testbed.devices["mgmt"]
+
+test.connect(via = 'ssh')
+
+test.api.copy_from_device(protocol='tftp',
+                        server='scpserver',
+                        remote_path='',
+                        local_path = 'flash:/test.cfg')
 
 # TFTP Server Test
 
@@ -216,9 +229,9 @@ ping_host(TEST_DEVICE)
 # NTP v4 Server Test
 # Jay
 
-c = ntplib.NTPClient()
-response = c.request(TEST_DEVICE, version = 4)
-print("NTP TIME IS " + ctime(response.tx_time) + " FROM NTP SERVER " + TEST_DEVICE)
+#c = ntplib.NTPClient()
+#response = c.request(TEST_DEVICE, version = 4)
+#print("NTP TIME IS " + ctime(response.tx_time) + " FROM NTP SERVER " + TEST_DEVICE)
 
 # DHCP Server Test
 
