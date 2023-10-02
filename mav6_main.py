@@ -21,6 +21,9 @@ from time import ctime
 
 # for file transfer tests
 from genie.libs.filetransferutils import FileServer
+
+# for HTTP tests
+import requests
     
 ######## FUNCTIONS #######
 
@@ -184,24 +187,36 @@ ping_host(TEST_DEVICE)
 
 # SCP Server Test
 
-testbed = loader.load('pyATS/testbed.yaml')
+'''testbed = loader.load('pyATS/testbed.yaml')
 
-test = testbed.devices["mgmt"]
+test = testbed.devices["C8000V"]
 
 test.connect(via = 'ssh')
 
-test.api.copy_from_device(protocol='tftp',
-                        server='scpserver',
-                        remote_path='',
-                        local_path = 'flash:/test.cfg')
+test.api.copy_to_device(protocol='scp',
+                        server='filesvr',
+                        remote_path='test.cfg',
+                        local_path = 'flash:/')'''
 
 # TFTP Server Test
 
 
 # HTTP Server Test
+r = requests.get("http://" + TEST_DEVICE)
+code = r.status_code
+if code == 200:
+    print("HTTP Test Successful (Status code 200)\n")
+else:
+    print("HTTP Test Failed (Status code " + code + ")\n")
 
 
 # HTTPS Server Test
+r = requests.get("https://" + TEST_DEVICE, verify= False)
+code = r.status_code
+if code == 200:
+    print("HTTPS Test Successful (Status code 200)\n")
+else:
+    print("HTTPS Test Failed (Status code " + code + ")\n")
 
 
 # SNMP v2 Read Test
