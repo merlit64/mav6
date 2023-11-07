@@ -59,7 +59,34 @@ def connect_host(device = '', protocol = '', command = ' '):
     if (not command.isspace):
         device.execute(command)
     
+# HTTP Test Function
+# verify - uses HTTPS if set to false
+def http_test(ip= '', verify = True):
+    try:
+        ip2 = ipaddr.IPAddress(ip)
+        print(colored(("IP address is good.  Version is IPv%s" % ip2.version), "green"))
+    except:
+        # This is not an IPv4 or an IPv6 address
+        print(colored("IP address is malformed... Exiting", "red"))
+        exit()
     
+    if verify:
+        http_string, http_print = "http://", "HTTP"
+    else:
+        http_string, http_print = "https://", "HTTPS"
+    
+    if ip2.version == 6:
+        url = http_string + "[{0}]".format(ip2.compressed)  
+    else:
+        url = http_string + ip2.compressed
+        
+    r = requests.get(url, verify = verify)
+    code = r.status_code
+    if code == 200:
+        print(colored((http_print + " Test Successful (Status code 200)\n"), "green"))
+    else:
+        print(colored((http_print + " Test Failed (Status code " + code + ")\n"), "red"))
+
 
 # SNMP Test Functions
 
@@ -178,75 +205,58 @@ ping_host(TEST_DEVICE)
 
 # Telnet Server Test
 # Jay
-#connect_host('mgmt', 'telnet')
+connect_host('mgmt', 'telnet')
 
 # SSH Server Test
 # Jay
-#connect_host('mgmt', 'ssh')
+connect_host('mgmt', 'ssh')
 
 
 # SCP Server Test
 
-'''testbed = loader.load('pyATS/testbed.yaml')
-
-test = testbed.devices["C8000V"]
-
-test.connect(via = 'ssh')
-
-test.api.copy_to_device(protocol='scp',
-                        server='filesvr',
-                        remote_path='test.cfg',
-                        local_path = 'flash:/')'''
+command = 'sshpass -p "' + PRIV_KEY + '" scp test.txt ' + CLI_USER + '@[' + TEST_DEVICE + ']:flash:/test.txt'
+os.system(command)
+print(colored(("SCP Server Test Attempted"), "green"))
 
 # TFTP Server Test
 
 
 # HTTP Server Test
-r = requests.get("http://" + TEST_DEVICE)
-code = r.status_code
-if code == 200:
-    print("HTTP Test Successful (Status code 200)\n")
-else:
-    print("HTTP Test Failed (Status code " + code + ")\n")
+http_test(TEST_DEVICE)
 
 
 # HTTPS Server Test
-r = requests.get("https://" + TEST_DEVICE, verify= False)
-code = r.status_code
-if code == 200:
-    print("HTTPS Test Successful (Status code 200)\n")
-else:
-    print("HTTPS Test Failed (Status code " + code + ")\n")
+http_test(TEST_DEVICE, verify=False)
 
 
 # SNMP v2 Read Test
 # Paul
-# snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, version = "v2", action = "read", community=COM_RO )
+snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, version = "v2", action = "read", community=COM_RO )
 
 
 # SNMP v2 Write Test
 # Paul
-#snmp_call( TEST_DEVICE, 'SNMPv2-MIB', 'sysContact', 0, mib_value="mav6 snmpv2test worked", version = "v2", action = "write", community=COM_RW )
+snmp_call( TEST_DEVICE, 'SNMPv2-MIB', 'sysContact', 0, mib_value="mav6 snmpv2test worked", version = "v2", action = "write", community=COM_RW )
 
 
 # SNMP v3 Read Test
 # Paul
-#snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "read", 
-          #userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
+snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "read", 
+          userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
 
 # SNMP v3 Write Test
 # Paul
-#snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, mib_value="mav6", version = "v3", action = "write", 
-          #userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
+snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, mib_value="mav6", version = "v3", action = "write", 
+          userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
 
 # NTP v4 Server Test
 # Jay
 
-#c = ntplib.NTPClient()
-#response = c.request(TEST_DEVICE, version = 4)
-#print("NTP TIME IS " + ctime(response.tx_time) + " FROM NTP SERVER " + TEST_DEVICE)
+c = ntplib.NTPClient()
+response = c.request(TEST_DEVICE, version = 4)
+print("NTP TIME IS " + ctime(response.tx_time) + " FROM NTP SERVER " + TEST_DEVICE)
 
 # DHCP Server Test
 
@@ -278,7 +288,16 @@ else:
 # SCP client Test
 # Linux Server
 # IOSXE Device
+'''testbed = loader.load('pyATS/testbed.yaml')
 
+test = testbed.devices["C8000V"]
+
+test.connect(via = 'ssh')
+
+test.api.copy_to_device(protocol='tftp',
+                        server='filesvr',
+                        remote_path='test.cfg',
+                        local_path = 'flash:/')'''
 
 # TFTP client Test
 # Linux Server
