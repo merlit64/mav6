@@ -2,6 +2,7 @@
 from time import sleep
 from termcolor import colored
 from secrets_1 import *
+from test_configuration import *
 import ipaddr
 
 # pyATS
@@ -239,64 +240,67 @@ def tftp_download( ip, port=69, filename='test.cfg' ):
 ### SERVER TESTS ###
 
 # Ping Server Test
-#ping_host(TEST_DEVICE)
+if PING_SERVER:
+    ping_host(TEST_DEVICE)
 
 
 # Telnet Server Test
-# Jay
-#connect_host('mgmt', 'telnet')
+if TELNET_SERVER:
+    connect_host('mgmt', 'telnet')
 
 # SSH Server Test
-# Jay
-#connect_host('mgmt', 'ssh')
+if SSH_SERVER:
+    connect_host('mgmt', 'ssh')
 
 
 # SCP Server Test
-'''
-command = 'sshpass -p "' + PRIV_KEY + '" scp test.txt ' + CLI_USER + '@[' + TEST_DEVICE + ']:flash:/test.txt'
-os.system(command)
-print(colored(("SCP Server Test Attempted"), "green"))
-'''
+if SCP_SERVER:
+    command = 'sshpass -p "' + PRIV_KEY + '" scp test.txt ' + CLI_USER + '@[' + TEST_DEVICE + ']:flash:/test.txt'
+    os.system(command)
+    print(colored(("SCP Server Test Attempted"), "green"))
+
 # TFTP Server Test
-tftp_download(TEST_DEVICE, port=69, filename='test.cfg')
+if TFTP_SERVER:
+    tftp_download(TEST_DEVICE, port=69, filename='test.cfg')
 
 
 # HTTP Server Test
-http_test(TEST_DEVICE)
+if HTTP_SERVER:
+    http_test(TEST_DEVICE)
 
 
 # HTTPS Server Test
-http_test(TEST_DEVICE, verify=False)
+if HTTPS_SERVER:
+    http_test(TEST_DEVICE, verify=False)
 
 
 # SNMP v2 Read Test
-# Paul
-snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, version = "v2", action = "read", community=COM_RO )
+if SNMPV2_READ:
+    snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, version = "v2", action = "read", community=COM_RO )
 
 
 # SNMP v2 Write Test
-# Paul
-snmp_call( TEST_DEVICE, 'SNMPv2-MIB', 'sysContact', 0, mib_value="mav6 snmpv2test worked", version = "v2", action = "write", community=COM_RW )
+if SNMPV2_WRITE:
+    snmp_call( TEST_DEVICE, 'SNMPv2-MIB', 'sysContact', 0, mib_value="mav6 snmpv2test worked", version = "v2", action = "write", community=COM_RW )
 
 
 # SNMP v3 Read Test
-# Paul
-snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "read", 
+if SNMPV3_READ:
+    snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "read", 
           userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
 
 # SNMP v3 Write Test
-# Paul
-snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, mib_value="mav6", version = "v3", action = "write", 
+if SNMPV3_WRITE:
+    snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, mib_value="mav6", version = "v3", action = "write", 
           userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
 
 # NTP v4 Server Test
-# Jay
-
-c = ntplib.NTPClient()
-response = c.request(TEST_DEVICE, version = 4)
-print("NTP TIME IS " + ctime(response.tx_time) + " FROM NTP SERVER " + TEST_DEVICE)
+if NTP_SERVER:
+    c = ntplib.NTPClient()
+    response = c.request(TEST_DEVICE, version = 4)
+    print("NTP TIME IS " + ctime(response.tx_time) + " FROM NTP SERVER " + TEST_DEVICE)
 
 # DHCP Server Test
 
