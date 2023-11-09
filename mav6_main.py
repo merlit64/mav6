@@ -1,4 +1,5 @@
 ######## IMPORTED LIBRARIES ########
+from time import sleep
 from termcolor import colored
 from secrets_1 import *
 import ipaddr
@@ -24,7 +25,11 @@ from genie.libs.filetransferutils import FileServer
 
 # for HTTP tests
 import requests
-    
+
+# for TFTP tests
+from tftpy import TftpClient
+from tftpy import TftpServer
+
 ######## FUNCTIONS #######
 
 def ping_host(ip):
@@ -191,6 +196,40 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
     print('\n')
     return 1
 
+def tftp_download( ip, port=69, filename='test.cfg' ):
+
+    try:
+        ip2 = ipaddr.IPAddress(ip)
+    except:
+        # This is not an IPv4 or an IPv6 address
+        print(colored("IP address is malformed... Exiting", "red"))
+        exit()
+
+    if ( ip2.version == 4 ):
+        print(colored("Attempting TFTP download via IPv4", "yellow"))        
+        client = TftpClient(ip, port)
+    else:
+        print(colored("Attempting TFTP download via IPv6", "yellow"))
+        client = TftpClient(ip, port, af_family=socket.AF_INET6 )
+
+    try:
+        # CHECK HERE TO SEE IF FILE IS ALREADY LOCAL
+        if os.path.isfile(filename):
+            print("tftp test download file exists locally... deleting")
+            os.remove(filename)
+            sleep(1)
+        else:
+            print("tftp test download file does not exist locally... continuing")
+        client.download(filename, filename)
+        # CHECK HERE TO SEE IF FILE IS LOCAL
+        if os.path.isfile(filename):
+            print(colored("TFTP Download success!!!", "green"))
+        else:
+            print(colored("TFTP Download failed", "red"))
+    except:
+        print(colored("TFTP Download failed", "red"))
+
+
 ######## MAIN PROGRAM ########
 
 # Note: ALL comments are made from the perspective of the test device
@@ -200,25 +239,26 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
 ### SERVER TESTS ###
 
 # Ping Server Test
-ping_host(TEST_DEVICE)
+#ping_host(TEST_DEVICE)
 
 
 # Telnet Server Test
 # Jay
-connect_host('mgmt', 'telnet')
+#connect_host('mgmt', 'telnet')
 
 # SSH Server Test
 # Jay
-connect_host('mgmt', 'ssh')
+#connect_host('mgmt', 'ssh')
 
 
 # SCP Server Test
-
+'''
 command = 'sshpass -p "' + PRIV_KEY + '" scp test.txt ' + CLI_USER + '@[' + TEST_DEVICE + ']:flash:/test.txt'
 os.system(command)
 print(colored(("SCP Server Test Attempted"), "green"))
-
+'''
 # TFTP Server Test
+tftp_download(TEST_DEVICE, port=69, filename='test.cfg')
 
 
 # HTTP Server Test
