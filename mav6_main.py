@@ -312,26 +312,40 @@ if NTP_SERVER:
 # Linux Server
 # Python Script
 # IOSXE Device
+# pyATS https://developer.cisco.com/docs/genie-docs/
 
 # Telnet Client Test
 # Linux Server
 # Python Script
 # IOSXE Device
+# pyATS Maybe this? description doesn't seem right: https://developer.cisco.com/docs/genie-docs/ 
 
 # SSH Client Test
 # Linux Server
 # Python Script
 # IOSXE Device
+# pyATS Maybe this? description doesn't seem right: https://developer.cisco.com/docs/genie-docs/
 
 
 # DNS Client Test
 # Linux Server
 # Windows Server
-
+# maybe https://developer.cisco.com/docs/genie-docs/
 
 # SCP client Test
 # Linux Server
 # IOSXE Device
+
+# TFTP client Test
+# Linux Server
+# IOSXE Device
+# 
+
+# HTTP client Test
+# Linux Server
+# Windows Server
+# IOSXE Device
+# pyATS https://developer.cisco.com/docs/genie-docs/%20opy or https://developer.cisco.com/docs/genie-docs/
 '''testbed = loader.load('pyATS/testbed.yaml')
 
 test = testbed.devices["C8000V"]
@@ -342,16 +356,6 @@ test.api.copy_to_device(protocol='tftp',
                         server='filesvr',
                         remote_path='test.cfg',
                         local_path = 'flash:/')'''
-
-# TFTP client Test
-# Linux Server
-# IOSXE Device
-
-
-# HTTP client Test
-# Linux Server
-# Windows Server
-# IOSXE Device
 
 
 # HTTPS client Test
@@ -370,6 +374,8 @@ test.api.copy_to_device(protocol='tftp',
 # Linux Server
 # Python Script?
 # IOSXE Device
+# pyATS https://developer.cisco.com/docs/genie-docs/
+# https://developer.cisco.com/docs/genie-docs/
 
 
 # DHCP Client Test
@@ -380,6 +386,8 @@ test.api.copy_to_device(protocol='tftp',
 # Linux Server
 # Python Script
 # IOSXE Device
+# pyATS: https://developer.cisco.com/docs/genie-docs/
+# https://developer.cisco.com/docs/genie-docs/
 
 
 # Streaming Telemetry Test
