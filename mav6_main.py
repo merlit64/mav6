@@ -342,9 +342,9 @@ print("Executing Client Tests (where test box acts as the client):\n\n")
 # IOSXE Device
 
 # TFTP client Test
-# Linux Server
-# IOSXE Device
-# 
+test_dev = connect_host('mgmt', 'ssh')
+test_dev.api.copy_to_device(protocol='tftp', server='tftpserver', 
+                            remote_path='test.txt', local_path='flash:/')
 
 # HTTP client Test
 # Linux Server

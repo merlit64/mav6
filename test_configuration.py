@@ -22,3 +22,9 @@ HTTP_CLIENT = False
 HTTPS_CLIENT = False
 SNMPV2_TRAP = False
 SNMPV3_TRAP = False
+
+# Local Servers available for client tests
+#USE_LOCAL_TELNET_SERVER = NA
+USE_LOCAL_SSH_SERVER = True
+USE_LOCAL_SCP_SERVER = True
+#USE_LOCAL_TFTP_SERVER = NA
