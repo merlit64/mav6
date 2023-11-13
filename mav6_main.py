@@ -64,6 +64,8 @@ def connect_host(device = '', protocol = '', command = ' '):
 
     if (not command.isspace):
         device.execute(command)
+
+    return test
     
 # HTTP Test Function
 # verify - uses HTTPS if set to false
@@ -239,6 +241,9 @@ def tftp_download( ip, port=69, filename='test.cfg' ):
 
 ### SERVER TESTS ###
 
+print("Executing Server Tests (where test box acts as the server):\n\n")
+
+
 # Ping Server Test
 if PING_SERVER:
     ping_host(TEST_DEVICE)
@@ -304,7 +309,7 @@ if NTP_SERVER:
 
 # DHCP Server Test
 
-
+print("Executing Client Tests (where test box acts as the client):\n\n")
 
 ### CLIENT TESTS ###
 
