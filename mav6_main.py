@@ -268,6 +268,13 @@ def filetransfer_client_download(device='', device_protocol='ssh', transfer_prot
         test_dev.api.copy_to_device(protocol='ftp', server='ftpserver', 
                                     remote_path='test.txt', local_path='flash:/',
                                     username='paul', password='donkey050')
+    elif (transfer_protocol == 'http'):
+        fs.server_info['port'] = 80
+        fs.server_info['credentials'] = { 'http': {'username':'paul', 'password':'donkey050'}}
+        fs.start_server()
+        test_dev.api.copy_to_device(protocol='http', server='httpserver', 
+                                    remote_path='test.txt', local_path='flash:/',
+                                    username='paul', password='donkey050')
     else:
         print("File transfer protocol not supported.")
         exit()
@@ -399,6 +406,10 @@ if FTP_CLIENT:
 # Windows Server
 # IOSXE Device
 # pyATS https://developer.cisco.com/docs/genie-docs/%20opy or https://developer.cisco.com/docs/genie-docs/
+if HTTP_CLIENT:
+    filetransfer_client_download(device='mgmt', device_protocol='ssh', transfer_protocol='http')
+
+
 '''testbed = loader.load('pyATS/testbed.yaml')
 
 test = testbed.devices["C8000V"]
