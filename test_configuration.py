@@ -17,7 +17,8 @@ PING_CLIENT = True
 TELNET_CLIENT = False
 SSH_CLIENT = False
 SCP_CLIENT = False
-TFTP_CLIENT = False
+TFTP_CLIENT = True
+FTP_CLIENT = True
 HTTP_CLIENT = False
 HTTPS_CLIENT = False
 SNMPV2_TRAP = False
@@ -28,3 +29,6 @@ SNMPV3_TRAP = False
 USE_LOCAL_SSH_SERVER = True
 USE_LOCAL_SCP_SERVER = True
 #USE_LOCAL_TFTP_SERVER = NA
+# Below is used for FTP and TFTP
+FILE_TRANSFER_SERVER_PATH = '/home/mav6b/Documents'
+PYATS_TESTBED = 'pyATS/testbed.yaml'

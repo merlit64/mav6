@@ -65,7 +65,7 @@ def connect_host(device = '', protocol = '', command = ' '):
     if (not command.isspace):
         device.execute(command)
 
-    return test
+    return test, testbed
     
 # HTTP Test Function
 # verify - uses HTTPS if set to false
@@ -199,8 +199,11 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
     print('\n')
     return 1
 
-def tftp_download( ip, port=69, filename='test.cfg' ):
-
+def tftp_server_download( ip, port=69, filename='test.cfg' ):
+    # From the test subjects perspective
+    # The test device acts as a tftp server 
+    # mav6 tries to download a file from the test subject tftp server.
+    #
     try:
         ip2 = ipaddr.IPAddress(ip)
     except:
@@ -232,7 +235,48 @@ def tftp_download( ip, port=69, filename='test.cfg' ):
     except:
         print(colored("TFTP Download failed", "red"))
 
+def filetransfer_client_download(device='', device_protocol='ssh', transfer_protocol='tftp'):
+    # From the test subjects perspective
+    # The test device acts as a tftp client 
+    # mav6 acts as the tftp server
+    # The test subject tries to download a file from mav6 tftp server.
+    #
+    # device - the name of the test device in the testbed yaml file
+    # device_protocol - the protocol used to connect to the test device ssh or telnet
+    # transfer_protocol - file transfer protocol to test, tftp (ftp, scp, http are futures)
 
+    # First connect to the test device
+    test_dev, testbed = connect_host(device, device_protocol)
+
+    # CHANGE name= BELOW TO A PARAMETER FROM BEING HARD CODED
+    # Create file server object
+    fs = FileServer(protocol=transfer_protocol, path=FILE_TRANSFER_SERVER_PATH)
+
+    # Add address and port parameters and start the server, try copy
+    # DYNAMICALLY ACQUIRE ADDRESS RATHER THAN HARD CODING IT BELOW
+    fs.server_info['address'] = "10.112.1.106"
+    if (transfer_protocol == 'tftp'):
+        fs.server_info['port'] = 69
+        fs.start_server()
+        test_dev.api.copy_to_device(protocol='tftp', server='tftpserver', 
+                                    remote_path='test.txt', local_path='flash:/')
+    elif (transfer_protocol == 'ftp'):
+        fs.server_info['credentials'] = { 'ftp': {'username':'paul', 'password':'donkey050'}}
+        fs.server_info['port'] = 21
+        fs.start_server()
+        #fs.verify_server()
+        test_dev.api.copy_to_device(protocol='ftp', server='ftpserver', 
+                                    remote_path='test.txt', local_path='flash:/',
+                                    username='paul', password='donkey050')
+    else:
+        print("File transfer protocol not supported.")
+        exit()
+
+    fs.stop_server()
+
+    # CONFIRM FILE ARRIVED AND RETURN RESULTS
+
+ 
 ######## MAIN PROGRAM ########
 
 # Note: ALL comments are made from the perspective of the test device
@@ -266,7 +310,7 @@ if SCP_SERVER:
 
 # TFTP Server Test
 if TFTP_SERVER:
-    tftp_download(TEST_DEVICE, port=69, filename='test.cfg')
+    tftp_server_download(TEST_DEVICE, port=69, filename='test.cfg')
 
 
 # HTTP Server Test
@@ -342,9 +386,13 @@ print("Executing Client Tests (where test box acts as the client):\n\n")
 # IOSXE Device
 
 # TFTP client Test
-test_dev = connect_host('mgmt', 'ssh')
-test_dev.api.copy_to_device(protocol='tftp', server='tftpserver', 
-                            remote_path='test.txt', local_path='flash:/')
+if TFTP_CLIENT:
+    filetransfer_client_download(device='mgmt', device_protocol='ssh', transfer_protocol='tftp')
+
+
+# FTP Client test
+if FTP_CLIENT:
+    filetransfer_client_download(device='mgmt', device_protocol='ssh', transfer_protocol='ftp')
 
 # HTTP client Test
 # Linux Server
