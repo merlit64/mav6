@@ -36,6 +36,7 @@ from tftpy import TftpServer
 def ping_host(ip):
     try:
         ip2 = ipaddr.IPAddress(ip)
+        
     except:
         # This is not an IPv4 or an IPv6 address
         print(colored("IP address is malformed... Exiting", "red"))
@@ -50,6 +51,12 @@ def ping_host(ip):
     else:
         return False
 
+
+def ping_client(device = ''):
+    device, testbed = connect_host(device, 'ssh')
+    print(colored(('Attempting ping client test...'), 'yellow'))
+    print(device.ping(LOCAL_DEVICE))
+
     
 # pyATS Connection Function
 # device - hostname of device being tested
@@ -60,7 +67,7 @@ def connect_host(device = '', protocol = '', command = ' '):
 
     test = testbed.devices[device]
 
-    test.connect(via = protocol)
+    test.connect(via = protocol, log_stdout=False)
 
     if (not command.isspace):
         device.execute(command)
@@ -369,6 +376,11 @@ print("Executing Client Tests (where test box acts as the client):\n\n")
 # Python Script
 # IOSXE Device
 # pyATS https://developer.cisco.com/docs/genie-docs/
+if PING_CLIENT:
+    ping_client('mgmt')
+
+
+
 
 # Telnet Client Test
 # Linux Server
@@ -408,18 +420,6 @@ if FTP_CLIENT:
 # pyATS https://developer.cisco.com/docs/genie-docs/%20opy or https://developer.cisco.com/docs/genie-docs/
 if HTTP_CLIENT:
     filetransfer_client_download(device='mgmt', device_protocol='ssh', transfer_protocol='http')
-
-
-'''testbed = loader.load('pyATS/testbed.yaml')
-
-test = testbed.devices["C8000V"]
-
-test.connect(via = 'ssh')
-
-test.api.copy_to_device(protocol='tftp',
-                        server='filesvr',
-                        remote_path='test.cfg',
-                        local_path = 'flash:/')'''
 
 
 # HTTPS client Test
