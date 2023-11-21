@@ -1,5 +1,5 @@
 # Server Tests
-PING_SERVER = True
+PING_SERVER = False
 TELNET_SERVER = False
 SSH_SERVER = False
 SCP_SERVER = False
@@ -14,17 +14,18 @@ NTP_SERVER = False
 
 # Client Tests
 PING_CLIENT = True
-TELNET_CLIENT = False
-SSH_CLIENT = False
+TELNET_CLIENT = True
+SSH_CLIENT = True
 SCP_CLIENT = False
-TFTP_CLIENT = True
-FTP_CLIENT = True
-HTTP_CLIENT = True
+TFTP_CLIENT = False
+FTP_CLIENT = False
+HTTP_CLIENT = False
 HTTPS_CLIENT = False
 # If you are using mav6's http server you must build a key file and cert
 # 
 SNMPV2_TRAP = False
 SNMPV3_TRAP = False
+NTP_CLIENT = True
 
 # Local Servers available for client tests
 #USE_LOCAL_TELNET_SERVER = NA
