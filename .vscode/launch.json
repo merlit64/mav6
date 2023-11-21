@@ -12,7 +12,6 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "sudo": true
         }
     ]
 }

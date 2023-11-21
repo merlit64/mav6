@@ -18,6 +18,12 @@ import ipaddr
 
 # pyATS
 from pyats.topology import loader
+from pyats.utils.fileutils import FileUtils
+from genie.libs.sdk.apis.iosxe import utils
+from genie.libs.sdk.apis.iosxe.ntp.configure import *
+
+# for ping test
+import os
 
 # for SNMP tests
 from pysnmp.hlapi import *
@@ -151,6 +157,24 @@ def ping_client(device = ''):
     print(device.ping(LOCAL_DEVICE))
 
     
+# pyATS Connection Function
+# device - hostname of device being tested
+# protocol - connection protocol being tested (telnet or ssh)
+# command - command used to test connection
+def connect_host(device = '', protocol = '', command = ' ', log_stdout=False):
+    testbed = loader.load('pyATS/testbed.yaml')
+
+    test = testbed.devices[device]
+
+    test.connect(via = protocol, log_stdout=False)
+
+    if (not command.isspace):
+        device.execute(command)
+
+    return test, testbed
+    
+# HTTP Test Function
+# verify - uses HTTPS if set to false
 def http_test(ip= '', verify = True):
 # http_test makes an http get request to the test device
 # verify - uses HTTPS if set to false
@@ -179,6 +203,58 @@ def http_test(ip= '', verify = True):
     else:
         print(colored((http_print + " Test Failed (Status code " + code + ")\n"), "red"))
 
+
+# telnet client test function
+def telnet_client(hostname, server_name, server_ip, user, secret):
+    device, testbed = connect_host(hostname, 'ssh')
+    if (utils.perform_telnet(device, server_name, server_ip, user, secret)):
+        print(colored('Telnet client test successful', 'green'))
+    else:
+        print(colored('Telnet client test failed', 'red'))
+            
+# ssh client test function
+def ssh_client(hostname, server_name, server_ip, user, secret):
+    device, testbed = connect_host(hostname, 'ssh')
+    if (utils.perform_ssh(device, server_name, server_ip, user, secret)):
+        print(colored('SSH client test successful', 'green'))
+    else:
+        print(colored('SSH client test failed', 'red'))
+        
+def ntp_client(hostname):
+    device, testbed = connect_host(hostname, 'ssh', log_stdout=True)
+    
+    ntp_config = [NTP_TEST_SERVER]
+    print(colored('Attempting NTP server configuration...', 'yellow'))
+    configure_ntp_server(device, ntp_config)
+    output = device.execute("show run | include ntp")
+    if (len(output) == 0):
+        print(colored('NTP server configuration failed', 'red'))
+    else:
+        message = 'NTP server configuration passed: ' + output
+        print(colored(message, 'green'))
+    
+
+# SNMP Test Functions
+
+class Udp6TransportTarget(UdpTransportTarget):
+    # SNMP over IPv6 tweaks
+    transportDomain = udp6.domainName
+
+    def __init__(self, transportAddr, timeout=1, retries=5, tagList=b'', iface=''):
+        self.transportAddr = (
+            socket.getaddrinfo(transportAddr[0], transportAddr[1],
+                               socket.AF_INET6,
+                               socket.SOCK_DGRAM,
+                               socket.IPPROTO_UDP)[0][4]
+            )
+        self.timeout = timeout
+        self.retries = retries
+        self.tagList = tagList
+        self.iface = iface
+
+    def openClientMode(self):
+        self.transport = udp6.Udp6SocketTransport().openClientMode()
+        return self.transport
     
 def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = "v2", action = "read", 
               community="public", userName=None, authKey=None, privKey=None,  
@@ -733,13 +809,16 @@ if PING_CLIENT:
 # Python Script
 # IOSXE Device
 # pyATS Maybe this? description doesn't seem right: https://developer.cisco.com/docs/genie-docs/ 
-
+if TELNET_CLIENT:
+    telnet_client('C8000V', 'mgmt', REMOTE_SERVER, CLI_USER, USER_PASS)
+    
 # SSH Client Test
 # Linux Server
 # Python Script
 # IOSXE Device
 # pyATS Maybe this? description doesn't seem right: https://developer.cisco.com/docs/genie-docs/
-
+if SSH_CLIENT:
+    ssh_client('C8000V', 'mgmt', REMOTE_SERVER, CLI_USER, USER_PASS)
 
 # DNS Client Test
 # Linux Server
@@ -1013,7 +1092,9 @@ if SNMPV3_TRAP:
 # IOSXE Device
 # pyATS https://developer.cisco.com/docs/genie-docs/
 # https://developer.cisco.com/docs/genie-docs/
-
+if NTP_CLIENT:
+    ntp_client('C8000V')
+    
 
 # DHCP Client Test
 # Linux Server
