@@ -1,4 +1,5 @@
 ######## IMPORTED LIBRARIES ########
+from multiprocessing import Process, current_process
 from time import sleep
 from termcolor import colored
 from secrets_1 import *
@@ -16,6 +17,7 @@ import os
 from pysnmp.hlapi import *
 from pysnmp.carrier.asynsock.dgram import udp6
 import socket
+import socketserver
 
 # for NTP test
 import ntplib
@@ -26,10 +28,18 @@ from genie.libs.filetransferutils import FileServer
 
 # for HTTP tests
 import requests
+from http.server import HTTPServer, BaseHTTPRequestHandler, SimpleHTTPRequestHandler
+import ssl
 
 # for TFTP tests
 from tftpy import TftpClient
 from tftpy import TftpServer
+import paramiko
+
+# for FTP tests
+from pyftpdlib.handlers import FTPHandler
+from pyftpdlib.servers import FTPServer
+from pyftpdlib.authorizers import DummyAuthorizer
 
 ######## FUNCTIONS #######
 
@@ -242,51 +252,82 @@ def tftp_server_download( ip, port=69, filename='test.cfg' ):
     except:
         print(colored("TFTP Download failed", "red"))
 
-def filetransfer_client_download(device='', device_protocol='ssh', transfer_protocol='tftp'):
+
+def start_server(transfer_protocol='tftp'):
+
+    if (transfer_protocol == 'tftp'):
+        print('starting tftp server...')
+        server = TftpServer('.')
+        server.listen('0.0.0.0', 69)
+    elif (transfer_protocol == 'ftp'):
+        print('starting ftp server...')
+        authorizer = DummyAuthorizer()
+        authorizer.add_user('paul', 'elephant060', '.')
+        handler = FTPHandler
+        handler.authorizer = authorizer
+        server = FTPServer(('',21), handler)
+        server.serve_forever()
+    elif (transfer_protocol == 'sftp'):
+        print('No embedded server for ' + transfer_protocol)
+    elif (transfer_protocol == 'http'):
+        print('Starting http server...')
+        handler = SimpleHTTPRequestHandler
+        server = socketserver.TCPServer(('10.112.1.106', 80), handler)
+        #server = BaseHTTPServer(('10.112.1.106', 80), BaseHTTPRequestHandler)
+        server.serve_forever()
+    elif (transfer_protocol == 'https'):
+        print('No embedded server for ' + transfer_protocol)
+        '''
+        print('Starting https server...')
+        server = HTTPServer(('10.112.1.106', 443), BaseHTTPRequestHandler)
+        server.socket = ssl.wrap_socket (server.socket, keyfile='path/to/key.pem',
+                                         certfile='path/to/cert.pem', server_side=True)
+        server.serve_forever()
+        '''
+    else:
+        print('No embedded server for ' + transfer_protocol)
+
+
+def filetransfer_client_download(ip='', device_protocol='ssh', transfer_protocol='tftp'):
     # From the test subjects perspective
     # The test device acts as a tftp client 
     # mav6 acts as the tftp server
     # The test subject tries to download a file from mav6 tftp server.
     #
-    # device - the name of the test device in the testbed yaml file
+    # ip - the name of the test device in the testbed yaml file
     # device_protocol - the protocol used to connect to the test device ssh or telnet
     # transfer_protocol - file transfer protocol to test, tftp (ftp, scp, http are futures)
 
     # First connect to the test device
-    test_dev, testbed = connect_host(device, device_protocol)
+    conn = paramiko.SSHClient()
+    conn.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    conn.connect(TEST_DEVICE, username=CLI_USER, password= USER_PASS)
+    router_conn = conn.invoke_shell()
+    print("Connected to Router\n")
 
-    # CHANGE name= BELOW TO A PARAMETER FROM BEING HARD CODED
-    # Create file server object
-    fs = FileServer(protocol=transfer_protocol, path=FILE_TRANSFER_SERVER_PATH)
 
-    # Add address and port parameters and start the server, try copy
-    # DYNAMICALLY ACQUIRE ADDRESS RATHER THAN HARD CODING IT BELOW
-    fs.server_info['address'] = "10.112.1.106"
     if (transfer_protocol == 'tftp'):
-        fs.server_info['port'] = 69
-        fs.start_server()
-        test_dev.api.copy_to_device(protocol='tftp', server='tftpserver', 
-                                    remote_path='test.txt', local_path='flash:/')
+        # NEED TO GET TO THE ENABLE PROMPT FIRST
+        # NEED ERROR CHECKING
+        command = 'copy tftp://10.112.1.106/test.txt flash:/\n\n\n' 
+        router_conn.send(command)
+        sleep(5)
+        print(router_conn.recv(5000).decode('utf-8'))
     elif (transfer_protocol == 'ftp'):
-        fs.server_info['credentials'] = { 'ftp': {'username':'paul', 'password':'donkey050'}}
-        fs.server_info['port'] = 21
-        fs.start_server()
-        #fs.verify_server()
-        test_dev.api.copy_to_device(protocol='ftp', server='ftpserver', 
-                                    remote_path='test.txt', local_path='flash:/',
-                                    username='paul', password='donkey050')
+        # NEED TO GET TO THE ENABLE PROMPT FIRST
+        # NEED ERROR CHECKING
+        command = 'copy ftp://paul:elephant060@10.112.1.106/test.txt flash:/\n\n\n' 
+        router_conn.send(command)
+        sleep(5)
+        print(router_conn.recv(5000).decode('utf-8'))
     elif (transfer_protocol == 'http'):
-        fs.server_info['port'] = 80
-        fs.server_info['credentials'] = { 'http': {'username':'paul', 'password':'donkey050'}}
-        fs.start_server()
-        test_dev.api.copy_to_device(protocol='http', server='httpserver', 
-                                    remote_path='test.txt', local_path='flash:/',
-                                    username='paul', password='donkey050')
+        command = 'copy http://10.112.1.106/test.txt flash:/\n\n\n' 
+        router_conn.send(command)
+        sleep(5)
+        print(router_conn.recv(5000).decode('utf-8'))
     else:
         print("File transfer protocol not supported.")
         exit()
-
-    fs.stop_server()
 
     # CONFIRM FILE ARRIVED AND RETURN RESULTS
 
@@ -406,12 +447,28 @@ if PING_CLIENT:
 
 # TFTP client Test
 if TFTP_CLIENT:
-    filetransfer_client_download(device='mgmt', device_protocol='ssh', transfer_protocol='tftp')
+    tftp_server_process = Process(target=start_server, name='tftpserver', args=('tftp',))
 
+    print('starting tftp server process')
+    tftp_server_process.start()
+    sleep(5)
+    filetransfer_client_download(ip='10.112.1.106', device_protocol='ssh', transfer_protocol='tftp')
+
+    sleep(2)
+    tftp_server_process.kill()
 
 # FTP Client test
 if FTP_CLIENT:
-    filetransfer_client_download(device='mgmt', device_protocol='ssh', transfer_protocol='ftp')
+    ftp_server_process = Process(target=start_server, name='ftpserver', args=('ftp',))
+    #ftp_client_process = Process(target=filetransfer_client_download, name='filetransfer_client')
+
+    print('starting ftp server process')
+    ftp_server_process.start()
+    sleep(5)
+    filetransfer_client_download(ip='10.112.1.106', device_protocol='ssh', transfer_protocol='ftp')
+
+    sleep(2)
+    ftp_server_process.kill()
 
 # HTTP client Test
 # Linux Server
@@ -419,7 +476,15 @@ if FTP_CLIENT:
 # IOSXE Device
 # pyATS https://developer.cisco.com/docs/genie-docs/%20opy or https://developer.cisco.com/docs/genie-docs/
 if HTTP_CLIENT:
-    filetransfer_client_download(device='mgmt', device_protocol='ssh', transfer_protocol='http')
+    http_server_process = Process(target=start_server, name='httpserver', args=('http',))
+
+    print('starting htp server process')
+    http_server_process.start()
+    sleep(5)
+    filetransfer_client_download(ip='10.112.1.106', device_protocol='ssh', transfer_protocol='http')
+
+    sleep(2)
+    http_server_process.kill()
 
 
 # HTTPS client Test
