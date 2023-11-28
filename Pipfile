@@ -15,6 +15,7 @@ scp = "*"
 paramiko = "*"
 ntplib = "*"
 genie = "*"
+pyftpdlib = "*"
 
 [dev-packages]
 

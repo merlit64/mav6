@@ -253,7 +253,15 @@ def tftp_server_download( ip, port=69, filename='test.cfg' ):
         print(colored("TFTP Download failed", "red"))
 
 
-def start_server(transfer_protocol='tftp'):
+def start_server(transfer_protocol='tftp', ip=MAV6_IPV4):
+
+    try:
+        ip2 = ipaddr.IPAddress(ip)
+        
+    except:
+        # This is not an IPv4 or an IPv6 address
+        print(colored("IP address is malformed... Exiting", "red"))
+        exit()
 
     if (transfer_protocol == 'tftp'):
         print('starting tftp server...')
@@ -271,17 +279,56 @@ def start_server(transfer_protocol='tftp'):
         print('No embedded server for ' + transfer_protocol)
     elif (transfer_protocol == 'http'):
         print('Starting http server...')
-        handler = SimpleHTTPRequestHandler
-        server = socketserver.TCPServer(('10.112.1.106', 80), handler)
+        if (ip2.version == 6):
+            server_socket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        else:
+            server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
+        server_socket.bind((ip, 80))
+        server_socket.listen(1)
+        while True:
+            client_connection, client_address = server_socket.accept()
+            request = client_connection.recv(1024).decode()
+            print(request)
+            response = "HTTP/1.0 200 OK\n\n Hello World"
+            client_connection.sendall(response.encode())
+            client_connection.close()
+
+
+
+        ##handler = SimpleHTTPRequestHandler
+        ##server = socketserver.TCPServer(('2005:1117:1:1:fc74:d46b:062c:59e1', 80), handler)
         #server = BaseHTTPServer(('10.112.1.106', 80), BaseHTTPRequestHandler)
-        server.serve_forever()
-    elif (transfer_protocol == 'https'):
-        print('No embedded server for ' + transfer_protocol)
-        '''
+        ##server.serve_forever()
+    elif (transfer_protocol == 'https'):        
         print('Starting https server...')
-        server = HTTPServer(('10.112.1.106', 443), BaseHTTPRequestHandler)
-        server.socket = ssl.wrap_socket (server.socket, keyfile='path/to/key.pem',
-                                         certfile='path/to/cert.pem', server_side=True)
+        if (ip2.version == 6):
+            server_socket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        else:
+            server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
+        wrapped_socket = ssl.wrap_socket(server_socket, certfile='keys-certs/server.crt', 
+                                         keyfile='keys-certs/server.key', server_side=True)
+        wrapped_socket.bind((ip, 443))
+        wrapped_socket.listen(1)
+        while True:
+            client_connection, client_address = wrapped_socket.accept()
+            request = client_connection.recv(1024).decode()
+            print(request)
+            response = "HTTP/1.0 200 OK\n\n Hello World"
+            client_connection.sendall(response.encode())
+            client_connection.close()
+
+        '''
+        handler = SimpleHTTPRequestHandler
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        
+        context.load_cert_chain('../cert.pem')
+        server_address = ('10.112.1.106', 443)
+
+        server = socketserver.TCPServer(server_address, handler)
+        server.socket = context.wrap_socket(server.socket, server_side=True)
+
         server.serve_forever()
         '''
     else:
@@ -305,23 +352,38 @@ def filetransfer_client_download(ip='', device_protocol='ssh', transfer_protocol
     router_conn = conn.invoke_shell()
     print("Connected to Router\n")
 
+    try:
+        ip2 = ipaddr.IPAddress(ip)
+        
+    except:
+        # This is not an IPv4 or an IPv6 address
+        print(colored("IP address is malformed... Exiting", "red"))
+        exit()
+    if ( ip2.version == 6 ):
+        ip = '[' + ip + ']'
 
     if (transfer_protocol == 'tftp'):
         # NEED TO GET TO THE ENABLE PROMPT FIRST
         # NEED ERROR CHECKING
-        command = 'copy tftp://10.112.1.106/test.txt flash:/\n\n\n' 
+        command = 'copy tftp://' + ip + '/test.txt flash:/\n\n\n' 
         router_conn.send(command)
         sleep(5)
         print(router_conn.recv(5000).decode('utf-8'))
     elif (transfer_protocol == 'ftp'):
         # NEED TO GET TO THE ENABLE PROMPT FIRST
         # NEED ERROR CHECKING
-        command = 'copy ftp://paul:elephant060@10.112.1.106/test.txt flash:/\n\n\n' 
+        command = 'copy ftp://paul:elephant060@' + ip + '/test.txt flash:/\n\n\n' 
         router_conn.send(command)
         sleep(5)
         print(router_conn.recv(5000).decode('utf-8'))
     elif (transfer_protocol == 'http'):
-        command = 'copy http://10.112.1.106/test.txt flash:/\n\n\n' 
+        command = 'copy http://' + ip + '/test.txt flash:/\n\n\n' 
+        
+        router_conn.send(command)
+        sleep(5)
+        print(router_conn.recv(5000).decode('utf-8'))
+    elif (transfer_protocol == 'https'):
+        command = 'copy https://' + ip + '/test.txt flash:/\n\n\n' 
         router_conn.send(command)
         sleep(5)
         print(router_conn.recv(5000).decode('utf-8'))
@@ -341,6 +403,13 @@ def filetransfer_client_download(ip='', device_protocol='ssh', transfer_protocol
 ### SERVER TESTS ###
 
 print("Executing Server Tests (where test box acts as the server):\n\n")
+try:
+    test_device_version = ipaddr.IPAddress(TEST_DEVICE).version
+    
+except:
+    # This is not an IPv4 or an IPv6 address
+    print(colored("IP address of TEST_DEVICE is malformed... Exiting", "red"))
+    exit()
 
 
 # Ping Server Test
@@ -461,36 +530,61 @@ if TFTP_CLIENT:
 if FTP_CLIENT:
     ftp_server_process = Process(target=start_server, name='ftpserver', args=('ftp',))
     #ftp_client_process = Process(target=filetransfer_client_download, name='filetransfer_client')
-
     print('starting ftp server process')
     ftp_server_process.start()
     sleep(5)
-    filetransfer_client_download(ip='10.112.1.106', device_protocol='ssh', transfer_protocol='ftp')
 
+    filetransfer_client_download(ip='10.112.1.106', device_protocol='ssh', transfer_protocol='ftp')
     sleep(2)
     ftp_server_process.kill()
 
 # HTTP client Test
-# Linux Server
-# Windows Server
-# IOSXE Device
-# pyATS https://developer.cisco.com/docs/genie-docs/%20opy or https://developer.cisco.com/docs/genie-docs/
+print('starting http server process')
 if HTTP_CLIENT:
-    http_server_process = Process(target=start_server, name='httpserver', args=('http',))
-
-    print('starting htp server process')
-    http_server_process.start()
-    sleep(5)
-    filetransfer_client_download(ip='10.112.1.106', device_protocol='ssh', transfer_protocol='http')
+    if (test_device_version == 4):
+        http_server_process = Process(target=start_server, name='httpserver', 
+                                      args=('http', MAV6_IPV4,))
+        http_server_process.start()
+        sleep(5)
+        filetransfer_client_download(ip=MAV6_IPV4, device_protocol='ssh', 
+                                     transfer_protocol='http')
+    else:
+        http_server_process = Process(target=start_server, name='httpserver', 
+                                      args=('http',MAV6_IPV6,))
+        http_server_process.start()
+        sleep(5)
+        filetransfer_client_download(ip=MAV6_IPV6, device_protocol='ssh', 
+                                     transfer_protocol='http')
 
     sleep(2)
     http_server_process.kill()
 
 
 # HTTPS client Test
-# Linux Server
-# Windows Server
-# # IOSXE Device
+if HTTPS_CLIENT:
+    # USE OS COMMANDS TO CREATE DIR, OPENSSL ROOTCA.KEY ROOTCA.CRT, SERVER.KEY, SERVER.CSR
+    # SERVER.CRT, 
+    print('starting https server process')
+    if (test_device_version == 4):
+        https_server_process = Process(target=start_server, name='httpsserver', 
+                                       args=('https',MAV6_IPV4,))
+        https_server_process.start()
+        sleep(5)
+        filetransfer_client_download(ip=MAV6_IPV4, device_protocol='ssh', 
+                                     transfer_protocol='https')
+    else:
+        https_server_process = Process(target=start_server, name='httpsserver', 
+                                       args=('https',MAV6_IPV6,))
+        https_server_process.start()
+        sleep(5)
+        filetransfer_client_download(ip=MAV6_IPV6, device_protocol='ssh', 
+                                     transfer_protocol='https')
+
+    # USE PYATS TO CREATE THE KEYS, TP, AUTHENTICATE THE ROOTCA.CRT, CREATE ROUTER CSR
+    # USE OS COMMANES TO SIGN THE CSR
+    # USE PYATS TO INSTALL THE ROUTER CERT
+    sleep(2)
+    https_server_process.kill()
 
 
 # SNMP v2 Trap Test
