@@ -1,35 +1,32 @@
 ######## IMPORTED LIBRARIES ########
+### STANDARD LIBRARIES ###
 from multiprocessing import Process, current_process
 from time import sleep
-from termcolor import colored
+from time import ctime
+import os
+import ssl
+import socket
+
+### LOCAL FILES ###
 from secrets_1 import *
 from test_configuration import *
+
+### PYPI LIBRARIES ###
+from termcolor import colored
 import ipaddr
 
 # pyATS
 from pyats.topology import loader
-from pyats.utils.fileutils import FileUtils
-
-# for ping test
-import os
 
 # for SNMP tests
 from pysnmp.hlapi import *
 from pysnmp.carrier.asynsock.dgram import udp6
-import socket
-import socketserver
 
 # for NTP test
 import ntplib
-from time import ctime
-
-# for file transfer tests
-from genie.libs.filetransferutils import FileServer
 
 # for HTTP tests
 import requests
-from http.server import HTTPServer, BaseHTTPRequestHandler, SimpleHTTPRequestHandler
-import ssl
 
 # for TFTP tests
 from tftpy import TftpClient
@@ -46,7 +43,7 @@ from pyftpdlib.authorizers import DummyAuthorizer
 def ping_host(ip):
     try:
         ip2 = ipaddr.IPAddress(ip)
-        
+
     except:
         # This is not an IPv4 or an IPv6 address
         print(colored("IP address is malformed... Exiting", "red"))
@@ -294,12 +291,6 @@ def start_server(transfer_protocol='tftp', ip=MAV6_IPV4):
             client_connection.sendall(response.encode())
             client_connection.close()
 
-
-
-        ##handler = SimpleHTTPRequestHandler
-        ##server = socketserver.TCPServer(('2005:1117:1:1:fc74:d46b:062c:59e1', 80), handler)
-        #server = BaseHTTPServer(('10.112.1.106', 80), BaseHTTPRequestHandler)
-        ##server.serve_forever()
     elif (transfer_protocol == 'https'):        
         print('Starting https server...')
         if (ip2.version == 6):
@@ -318,19 +309,6 @@ def start_server(transfer_protocol='tftp', ip=MAV6_IPV4):
             response = "HTTP/1.0 200 OK\n\n Hello World"
             client_connection.sendall(response.encode())
             client_connection.close()
-
-        '''
-        handler = SimpleHTTPRequestHandler
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        
-        context.load_cert_chain('../cert.pem')
-        server_address = ('10.112.1.106', 443)
-
-        server = socketserver.TCPServer(server_address, handler)
-        server.socket = context.wrap_socket(server.socket, server_side=True)
-
-        server.serve_forever()
-        '''
     else:
         print('No embedded server for ' + transfer_protocol)
 
@@ -482,14 +460,8 @@ print("Executing Client Tests (where test box acts as the client):\n\n")
 ### CLIENT TESTS ###
 
 # Ping Client Test
-# Linux Server
-# Python Script
-# IOSXE Device
-# pyATS https://developer.cisco.com/docs/genie-docs/
 if PING_CLIENT:
     ping_client('mgmt')
-
-
 
 
 # Telnet Client Test
