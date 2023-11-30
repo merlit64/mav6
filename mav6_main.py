@@ -20,7 +20,10 @@ from pyats.topology import loader
 
 # for SNMP tests
 from pysnmp.hlapi import *
-from pysnmp.carrier.asynsock.dgram import udp6
+from pysnmp.carrier.asynsock.dgram import udp, udp6
+from pysnmp.entity import engine, config
+from pysnmp.entity.rfc3413 import ntfrcv
+
 
 # for NTP test
 import ntplib
@@ -213,6 +216,70 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
     print('\n')
     return 1
 
+def snmp_start_trap_receiver(version=2, ip=MAV6_IPV4, port=162):
+    # This function will be called as its own process
+
+    def cbFun(snmpEngine, stateReference, contextEngineId, contextName, varBinds, cbCtx):
+        # Call back function, This runs when a trap is received
+        print('Received a Trap!')
+        for name, val in varBinds:
+            print(name.prettyPrint() + ' = ' + val.prettyPrint())
+
+    # Determine if this is an IPv4 or IPv6 address
+    try:
+        ip2 = ipaddr.IPAddress(ip)
+        
+    except:
+        # This is not an IPv4 or an IPv6 address
+        print(colored("IP address is malformed... Exiting", "red"))
+        exit()
+
+    snmp_engine = engine.SnmpEngine()
+    config.addTransport(snmp_engine, udp.domainName + (1,), 
+                        udp.UdpTransport().openServerMode((ip, port)) )
+    if (version == 2):
+        print('starting snmp trap receiver v2...')
+        config.addV1System(snmp_engine, 'my-area', COM_RW)
+    elif (version ==3):
+        print('starting snmp trap receiver v2...')
+    else:
+        print(colored("Only SNMP version 2 or 3 is supported... Exiting", "red"))
+
+    ntfrcv.NotificationReceiver(snmp_engine, cbFun)
+    snmp_engine.transportDispatcher.jobStarted(1)
+
+    try:
+        snmp_engine.transportDispatcher.runDispatcher()
+    except:
+        snmp_engine.transportDispatcher.closeDispatcher()
+        raise
+
+
+def snmp_trap_send(destination=MAV6_IPV4, port=162):
+    # This function is strictly for testing the trap receiver
+    # It may never be used in normal mav6 operation
+    # in Normal operation the routers should send the traps to the reciever
+    iterator = sendNotification (
+        SnmpEngine(),
+        CommunityData('public', mpModel=0),
+        UdpTransportTarget((destination, port)),
+        ContextData(),
+        'trap',
+        NotificationType(
+            ObjectIdentity('1.3.6.1.6.3.1.1.5.2')
+        ).addVarBinds(
+            ('1.3.6.1.6.3.1.1.4.3.0', '1.3.6.1.4.1.20408.4.1.1.2'),
+            ('1.3.6.1.2.1.1.1.0', OctetString('my system'))
+        ).loadMibs(
+            'SNMPv2-MIB'
+        )
+    )
+    
+    errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
+    if(errorIndication):
+        print(errorIndication)
+
+
 def tftp_server_download( ip, port=69, filename='test.cfg' ):
     # From the test subjects perspective
     # The test device acts as a tftp server 
@@ -306,7 +373,7 @@ def start_server(transfer_protocol='tftp', ip=MAV6_IPV4):
             client_connection, client_address = wrapped_socket.accept()
             request = client_connection.recv(1024).decode()
             print(request)
-            response = "HTTP/1.0 200 OK\n\n Hello World"
+            response = "HTTP/1.0 200 OK\n\n Mav6 File Transfer completed successfully!"
             client_connection.sendall(response.encode())
             client_connection.close()
     else:
@@ -560,7 +627,28 @@ if HTTPS_CLIENT:
 
 
 # SNMP v2 Trap Test
-# Python Library
+if SNMPV2_TRAP:
+    snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
+                                         args=(2, MAV6_IPV4,162,))
+
+    print('starting snmpv2 trap receiver process')
+    snmp_trap_receiver_process.start()
+    sleep(5)
+    # Below sends a test trap from mav6 to mav6 trap receiver, leave commented unless testing
+    #snmp_trap_send()
+
+    # Configure TEST_DEVICE to send SNMP traps to trap receiver
+    device, testbed = connect_host('mgmt', 'ssh')
+    device.configure ('''
+                      snmp-server enable traps
+                      snmp-server host ''' + MAV6_IPV4 + ' traps ' + COM_RW + '\n' 
+                      )
+    
+    # SHOULD HAVE RECIEVED A TRAP FROM THE CONFIGURATION ABOVE
+    # CONFIRM TRAP AND PRINT SUCCESS OR FAILURE TO THE SCREEN
+
+    sleep(2)
+    snmp_trap_receiver_process.kill()
 
 # SNMP v3 Trap Test
 # Python Library?
