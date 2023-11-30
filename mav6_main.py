@@ -235,8 +235,13 @@ def snmp_start_trap_receiver(version=2, ip=MAV6_IPV4, port=162):
         exit()
 
     snmp_engine = engine.SnmpEngine()
-    config.addTransport(snmp_engine, udp.domainName + (1,), 
-                        udp.UdpTransport().openServerMode((ip, port)) )
+    if (ip2.version == 4):
+        config.addTransport(snmp_engine, udp.domainName + (1,), 
+                            udp.UdpTransport().openServerMode((ip, port)) )
+    else:
+        config.addTransport(snmp_engine, udp6.domainName + (1,), 
+                            udp6.Udp6Transport().openServerMode((ip, port)) )
+
     if (version == 2):
         print('starting snmp trap receiver v2...')
         config.addV1System(snmp_engine, 'my-area', COM_RW)
@@ -255,14 +260,14 @@ def snmp_start_trap_receiver(version=2, ip=MAV6_IPV4, port=162):
         raise
 
 
-def snmp_trap_send(destination=MAV6_IPV4, port=162):
+def snmp_trap_send(destination=MAV6_IPV6, port=162):
     # This function is strictly for testing the trap receiver
     # It may never be used in normal mav6 operation
     # in Normal operation the routers should send the traps to the reciever
     iterator = sendNotification (
         SnmpEngine(),
-        CommunityData('public', mpModel=0),
-        UdpTransportTarget((destination, port)),
+        CommunityData('FEDcivrw', mpModel=0),
+        Udp6TransportTarget((destination, port)),
         ContextData(),
         'trap',
         NotificationType(
@@ -629,7 +634,7 @@ if HTTPS_CLIENT:
 # SNMP v2 Trap Test
 if SNMPV2_TRAP:
     snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
-                                         args=(2, MAV6_IPV4,162,))
+                                         args=(2, MAV6_IPV6,162,))
 
     print('starting snmpv2 trap receiver process')
     snmp_trap_receiver_process.start()
@@ -639,10 +644,8 @@ if SNMPV2_TRAP:
 
     # Configure TEST_DEVICE to send SNMP traps to trap receiver
     device, testbed = connect_host('mgmt', 'ssh')
-    device.configure ('''
-                      snmp-server enable traps
-                      snmp-server host ''' + MAV6_IPV4 + ' traps ' + COM_RW + '\n' 
-                      )
+    device.configure ('snmp-server host ' + MAV6_IPV6 + ' traps version 2c ' + COM_RW + \
+                      ' udp-port 162 config\n' )
     
     # SHOULD HAVE RECIEVED A TRAP FROM THE CONFIGURATION ABOVE
     # CONFIRM TRAP AND PRINT SUCCESS OR FAILURE TO THE SCREEN
