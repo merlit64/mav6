@@ -43,6 +43,23 @@ from pyftpdlib.servers import FTPServer
 from pyftpdlib.authorizers import DummyAuthorizer
 
 ######## FUNCTIONS #######
+def ip_version(ip):
+    try:
+        test_device_ipaddr = ipaddr.IPAddress(TEST_DEVICE)
+    except:
+        # This is not an IPv4 or an IPv6 address
+        print(colored("IP address is malformed... Exiting", "red"))
+        exit()
+
+    if (test_device_ipaddr.version == 4):
+        return 4
+    elif (test_device_ipaddr.version == 6):
+        return 6
+    else:
+        # This is not an IPv4 or an IPv6 address
+        print(colored("IP address is malformed... Exiting", "red"))
+        exit()
+
 
 def ping_host(ip):
     try:
@@ -276,43 +293,48 @@ def snmp_trap_send(destination=MAV6_IPV4, port=162, snmp_version = 2):
     # This function is strictly for testing the trap receiver
     # It may never be used in normal mav6 operation
     # in Normal operation the routers should send the traps to the reciever
-    '''
-    iterator = sendNotification (
-        SnmpEngine(),
-        CommunityData('FEDcivrw', mpModel=0), #for version 2c
-        #UsmUserData('v3user', authKey='C1sco123!', privKey='C1sco123!', 
-        #            authProtocol=usmHMACSHAAuthProtocol, privProtocol=usmAesCfb128Protocol),
-        UdpTransportTarget((destination, port)),
-        # Udp6TransportTarget((destination, port)),  # for IPv6 transport
-        ContextData(),
-        'trap',
-        NotificationType(
-            ObjectIdentity('1.3.6.1.6.3.1.1.5.2')
-        ).addVarBinds(
-            ('1.3.6.1.6.3.1.1.4.3.0', '1.3.6.1.4.1.20408.4.1.1.2'),
-            ('1.3.6.1.2.1.1.1.0', OctetString('my system'))
-        ).loadMibs(
-            'SNMPv2-MIB'
+    if (snmp_version == 2):
+        iterator = sendNotification (
+            SnmpEngine(),
+            CommunityData('FEDcivrw', mpModel=0), #for version 2c
+            #UsmUserData('v3user', authKey='C1sco123!', privKey='C1sco123!', 
+            #            authProtocol=usmHMACSHAAuthProtocol, privProtocol=usmAesCfb128Protocol),
+            UdpTransportTarget((destination, port)) if ip_version(destination) == 4 else Udp6TransportTarget((destination, port)),
+            #UdpTransportTarget((destination, port)),
+            # Udp6TransportTarget((destination, port)),  # for IPv6 transport
+            ContextData(),
+            'trap',
+            NotificationType(
+                ObjectIdentity('1.3.6.1.6.3.1.1.5.2')
+            ).addVarBinds(
+                ('1.3.6.1.6.3.1.1.4.3.0', '1.3.6.1.4.1.20408.4.1.1.2'),
+                ('1.3.6.1.2.1.1.1.0', OctetString('my system'))
+            ).loadMibs(
+                'SNMPv2-MIB'
+            )
         )
-    )
-    '''
-    # send notification for v3
-    iterator = sendNotification (
-        SnmpEngine(rfc1902.OctetString(hexValue='80000009030000c1b1129980')),
-        UsmUserData('mavuser'),
-        UdpTransportTarget((destination, port)),
-        # Udp6TransportTarget((destination, port)),  # for IPv6 transport
-        ContextData(),
-        'trap',
-        NotificationType(
-            ObjectIdentity('1.3.6.1.6.3.1.1.5.2')
-        ).addVarBinds(
-            ('1.3.6.1.6.3.1.1.4.3.0', '1.3.6.1.4.1.20408.4.1.1.2'),
-            ('1.3.6.1.2.1.1.1.0', OctetString('my system'))
-        ).loadMibs(
-            'SNMPv2-MIB'
+    elif(snmp_version == 3):
+        # send notification for v3
+        iterator = sendNotification (
+            SnmpEngine(rfc1902.OctetString(hexValue='80000009030000c1b1129980')),
+            UsmUserData('mavuser'),
+            UdpTransportTarget((destination, port)) if ip_version(destination) == 4 else Udp6TransportTarget((destination, port)),
+            # UdpTransportTarget((destination, port)),
+            # Udp6TransportTarget((destination, port)),  # for IPv6 transport
+            ContextData(),
+            'trap',
+            NotificationType(
+                ObjectIdentity('1.3.6.1.6.3.1.1.5.2')
+            ).addVarBinds(
+                ('1.3.6.1.6.3.1.1.4.3.0', '1.3.6.1.4.1.20408.4.1.1.2'),
+                ('1.3.6.1.2.1.1.1.0', OctetString('my system'))
+            ).loadMibs(
+                'SNMPv2-MIB'
+            )
         )
-    )
+    else:
+        print('Unknow snmp version!')
+        exit()
 
     errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
     if(errorIndication):
@@ -674,8 +696,13 @@ if SNMPV2_TRAP:
     snmp_trap_receiver_process.start()
     sleep(5)
     # Below sends a test trap from mav6 to mav6 trap receiver, leave commented unless testing
-    #snmp_trap_send()
-
+    '''
+    if (ip_version(TEST_DEVICE) == 4):
+        snmp_trap_send(destination=MAV6_IPV4, port=162, snmp_version=2)
+    else:
+        snmp_trap_send(destination=MAV6_IPV6, port=162, snmp_version=2)
+    '''
+    
     # Configure TEST_DEVICE to send SNMP traps to trap receiver
     device, testbed = connect_host('mgmt', 'ssh')
     device.configure ('snmp-server host ' + MAV6_IPV4 + ' traps version 2c ' + COM_RW + \
@@ -689,19 +716,29 @@ if SNMPV2_TRAP:
 
 # SNMP v3 Trap Test
 if SNMPV3_TRAP:
-    snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
-                                         args=(3, MAV6_IPV6,162,))
+    if (ip_version(TEST_DEVICE) == 4):
+        snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
+                                             args=(3, MAV6_IPV4,162,))
+    else:
+        snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
+                                             args=(3, MAV6_IPV6,162,))
 
     print('starting snmpv3 trap receiver process')
     snmp_trap_receiver_process.start()
     sleep(5)
     # Below sends a test trap from mav6 to mav6 trap receiver, leave commented unless testing
-    snmp_trap_send()
+    if (ip_version(TEST_DEVICE) == 4):
+        snmp_trap_send(destination=MAV6_IPV4, port=162, snmp_version=3)
+    else:
+        snmp_trap_send(destination=MAV6_IPV6, port=162, snmp_version=3)
 
     # Configure TEST_DEVICE to send SNMP traps to trap receiver
     device, testbed = connect_host('mgmt', 'ssh')
-    device.configure ('snmp-server host ' + MAV6_IPV4 + ' traps version 3 ' + COM_RW + \
-                      ' udp-port 162 config\n' )
+    device.configure ('snmp-server group mav6group v3 noauth\n' + \
+                        'snmp-server user mav6user mav6group v3\n' + \
+                        'snmp-server enable traps\n' + \
+                        'snmp-server host ' + MAV6_IPV4 + ' traps version 3 noauth mav6user\n'
+                        )
     
     # SHOULD HAVE RECIEVED A TRAP FROM THE CONFIGURATION ABOVE
     # CONFIRM TRAP AND PRINT SUCCESS OR FAILURE TO THE SCREEN
