@@ -689,23 +689,23 @@ if HTTPS_CLIENT:
 
 # SNMP v2 Trap Test
 if SNMPV2_TRAP:
+    if (ip_version(TEST_DEVICE) == 4):
+        mav6_ip = MAV6_IPV4
+    else:
+        mav6_ip = MAV6_IPV6
+
     snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
-                                         args=(2, MAV6_IPV4,162,))
+                                         args=(2, mav6_ip,162,))
 
     print('starting snmpv2 trap receiver process')
     snmp_trap_receiver_process.start()
     sleep(5)
     # Below sends a test trap from mav6 to mav6 trap receiver, leave commented unless testing
-    '''
-    if (ip_version(TEST_DEVICE) == 4):
-        snmp_trap_send(destination=MAV6_IPV4, port=162, snmp_version=2)
-    else:
-        snmp_trap_send(destination=MAV6_IPV6, port=162, snmp_version=2)
-    '''
+    #snmp_trap_send(destination=mav6_ip, port=162, snmp_version=2)
     
     # Configure TEST_DEVICE to send SNMP traps to trap receiver
     device, testbed = connect_host('mgmt', 'ssh')
-    device.configure ('snmp-server host ' + MAV6_IPV4 + ' traps version 2c ' + COM_RW + \
+    device.configure ('snmp-server host ' + mav6_ip + ' traps version 2c ' + COM_RW + \
                       ' udp-port 162 config\n' )
     
     # SHOULD HAVE RECIEVED A TRAP FROM THE CONFIGURATION ABOVE
@@ -717,27 +717,25 @@ if SNMPV2_TRAP:
 # SNMP v3 Trap Test
 if SNMPV3_TRAP:
     if (ip_version(TEST_DEVICE) == 4):
-        snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
-                                             args=(3, MAV6_IPV4,162,))
+        mav6_ip = MAV6_IPV4
     else:
-        snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
-                                             args=(3, MAV6_IPV6,162,))
+        mav6_ip = MAV6_IPV6
+
+    snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
+                                        args=(3, mav6_ip,162,))
 
     print('starting snmpv3 trap receiver process')
     snmp_trap_receiver_process.start()
     sleep(5)
     # Below sends a test trap from mav6 to mav6 trap receiver, leave commented unless testing
-    if (ip_version(TEST_DEVICE) == 4):
-        snmp_trap_send(destination=MAV6_IPV4, port=162, snmp_version=3)
-    else:
-        snmp_trap_send(destination=MAV6_IPV6, port=162, snmp_version=3)
+    snmp_trap_send(destination=mav6_ip, port=162, snmp_version=3)
 
     # Configure TEST_DEVICE to send SNMP traps to trap receiver
     device, testbed = connect_host('mgmt', 'ssh')
     device.configure ('snmp-server group mav6group v3 noauth\n' + \
                         'snmp-server user mav6user mav6group v3\n' + \
                         'snmp-server enable traps\n' + \
-                        'snmp-server host ' + MAV6_IPV4 + ' traps version 3 noauth mav6user\n'
+                        'snmp-server host ' + mav6_ip + ' traps version 3 noauth mav6user\n'
                         )
     
     # SHOULD HAVE RECIEVED A TRAP FROM THE CONFIGURATION ABOVE
