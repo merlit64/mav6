@@ -62,14 +62,7 @@ def ip_version(ip):
 
 
 def ping_host(ip):
-    try:
-        ip2 = ipaddr.IPAddress(ip)
-
-    except:
-        # This is not an IPv4 or an IPv6 address
-        print(colored("IP address is malformed... Exiting", "red"))
-        exit()
-    if ( ip2.version == 4 ):
+    if ( ip_version(ip) == 4 ):
         response = os.system("ping -c 1 " + ip)
     else:
         response = os.system("ping6 -c 1 " + ip)
@@ -174,27 +167,18 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
     # authProtocol - Only required for SNMPv3... It's the authentication protocol, None, MD5 or a SHA algorithm
     # privProtocol -  Only required for SNMPv3... It's the encryption protocol, DES, AES128, 192, 256, etc.
     
-    # Check for IPv4 or IPv6 address
-    try:
-        ip2 = ipaddr.IPAddress(ip)
-        print(colored(("IP address is good.  Version is IPv%s" % ip2.version), "green"))
-    except:
-        # This is not an IPv4 or an IPv6 address
-        print(colored("IP address is malformed... Exiting", "red"))
-        exit()
-
     # Build SNMP get or set command
     if (action == "read" and version == "v2"):
         iterator = getCmd(SnmpEngine(),
                         CommunityData(community),
-                        UdpTransportTarget((ip, port)) if ip2.version == 4 else Udp6TransportTarget((ip, port)),
+                        UdpTransportTarget((ip, port)) if ip_version(ip) == 4 else Udp6TransportTarget((ip, port)),
                         ContextData(),
                         ObjectType(ObjectIdentity(module, parent, suffix)))
 
     elif ( action == "write" and version == "v2" ):
         iterator = setCmd(SnmpEngine(),
                         CommunityData(community),
-                        UdpTransportTarget((ip, port)) if ip2.version == 4 else Udp6TransportTarget((ip, port)),
+                        UdpTransportTarget((ip, port)) if ip_version(ip) == 4 else Udp6TransportTarget((ip, port)),
                         ContextData(),
                         ObjectType(ObjectIdentity(module, parent, suffix), mib_value))
 
@@ -202,7 +186,7 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
         iterator = getCmd(SnmpEngine(),
            UsmUserData(userName=userName, authKey=authKey, privKey=privKey, 
                        authProtocol=authProtocol, privProtocol=privProtocol),
-           UdpTransportTarget((ip, port)) if ip2.version == 4 else Udp6TransportTarget((ip, port)),
+           UdpTransportTarget((ip, port)) if ip_version(ip) == 4 else Udp6TransportTarget((ip, port)),
            ContextData(),
            ObjectType(ObjectIdentity(module, parent, suffix)))
 
@@ -210,7 +194,7 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
         iterator = setCmd(SnmpEngine(),
             UsmUserData(userName=userName, authKey=authKey, privKey=privKey, 
                        authProtocol=authProtocol, privProtocol=privProtocol),
-            UdpTransportTarget((ip, port)) if ip2.version == 4 else Udp6TransportTarget((ip, port)),
+            UdpTransportTarget((ip, port)) if ip_version(ip) == 4 else Udp6TransportTarget((ip, port)),
             ContextData(),
             ObjectType(ObjectIdentity(module, parent, suffix), mib_value))
 
@@ -338,14 +322,7 @@ def tftp_server_download( ip, port=69, filename='test.cfg' ):
     # The test device acts as a tftp server 
     # mav6 tries to download a file from the test subject tftp server.
     #
-    try:
-        ip2 = ipaddr.IPAddress(ip)
-    except:
-        # This is not an IPv4 or an IPv6 address
-        print(colored("IP address is malformed... Exiting", "red"))
-        exit()
-
-    if ( ip2.version == 4 ):
+    if ( ip_version(ip) == 4 ):
         print(colored("Attempting TFTP download via IPv4", "yellow"))        
         client = TftpClient(ip, port)
     else:
@@ -372,14 +349,6 @@ def tftp_server_download( ip, port=69, filename='test.cfg' ):
 
 def start_server(transfer_protocol='tftp', ip=MAV6_IPV4):
 
-    try:
-        ip2 = ipaddr.IPAddress(ip)
-        
-    except:
-        # This is not an IPv4 or an IPv6 address
-        print(colored("IP address is malformed... Exiting", "red"))
-        exit()
-
     if (transfer_protocol == 'tftp'):
         print('starting tftp server...')
         server = TftpServer('.')
@@ -396,7 +365,7 @@ def start_server(transfer_protocol='tftp', ip=MAV6_IPV4):
         print('No embedded server for ' + transfer_protocol)
     elif (transfer_protocol == 'http'):
         print('Starting http server...')
-        if (ip2.version == 6):
+        if (ip_version(ip) == 6):
             server_socket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         else:
             server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -413,7 +382,7 @@ def start_server(transfer_protocol='tftp', ip=MAV6_IPV4):
 
     elif (transfer_protocol == 'https'):        
         print('Starting https server...')
-        if (ip2.version == 6):
+        if (ip_version(ip) == 6):
             server_socket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         else:
             server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -433,7 +402,7 @@ def start_server(transfer_protocol='tftp', ip=MAV6_IPV4):
         print('No embedded server for ' + transfer_protocol)
 
 
-def filetransfer_client_download(ip='', device_protocol='ssh', transfer_protocol='tftp'):
+def filetransfer_client_download(server_ip='', device_protocol='ssh', transfer_protocol='tftp'):
     # From the test subjects perspective
     # The test device acts as a tftp client 
     # mav6 acts as the tftp server
@@ -450,14 +419,7 @@ def filetransfer_client_download(ip='', device_protocol='ssh', transfer_protocol
     router_conn = conn.invoke_shell()
     print("Connected to Router\n")
 
-    try:
-        ip2 = ipaddr.IPAddress(ip)
-        
-    except:
-        # This is not an IPv4 or an IPv6 address
-        print(colored("IP address is malformed... Exiting", "red"))
-        exit()
-    if ( ip2.version == 6 ):
+    if ( ip_version(ip) == 6 ):
         ip = '[' + ip + ']'
 
     if (transfer_protocol == 'tftp'):
@@ -603,7 +565,10 @@ if TFTP_CLIENT:
     print('starting tftp server process')
     tftp_server_process.start()
     sleep(5)
-    filetransfer_client_download(ip='10.112.1.106', device_protocol='ssh', transfer_protocol='tftp')
+    filetransfer_client_download(server_ip='10.112.1.106', device_protocol='ssh', transfer_protocol='tftp')
+
+    # CHECK TO SEE IF THE FILE IS ON THE FLASH
+    # SEND A SUCCESS OR FAILURE MESSAGE TO THE SCREEN
 
     sleep(2)
     tftp_server_process.kill()
@@ -616,28 +581,33 @@ if FTP_CLIENT:
     ftp_server_process.start()
     sleep(5)
 
-    filetransfer_client_download(ip='10.112.1.106', device_protocol='ssh', transfer_protocol='ftp')
+    filetransfer_client_download(server_ip='10.112.1.106', device_protocol='ssh', transfer_protocol='ftp')
+
+    # CHECK TO SEE IF THE FILE IS ON THE FLASH
+    # SEND A SUCCESS OR FAILURE MESSAGE TO THE SCREEN
+
     sleep(2)
     ftp_server_process.kill()
 
 # HTTP client Test
-print('starting http server process')
 if HTTP_CLIENT:
+    print('starting http server process')
     if (ip_version(TEST_DEVICE) == 4):
         http_server_process = Process(target=start_server, name='httpserver', 
                                       args=('http', MAV6_IPV4,))
         http_server_process.start()
         sleep(5)
-        filetransfer_client_download(ip=MAV6_IPV4, device_protocol='ssh', 
+        filetransfer_client_download(server_ip=MAV6_IPV4, device_protocol='ssh', 
                                      transfer_protocol='http')
     else:
         http_server_process = Process(target=start_server, name='httpserver', 
                                       args=('http',MAV6_IPV6,))
         http_server_process.start()
         sleep(5)
-        filetransfer_client_download(ip=MAV6_IPV6, device_protocol='ssh', 
+        filetransfer_client_download(server_ip=MAV6_IPV6, device_protocol='ssh', 
                                      transfer_protocol='http')
-
+    # CHECK TO SEE IF THE FILE IS ON THE FLASH
+    # SEND A SUCCESS OR FAILURE MESSAGE TO THE SCREEN
     sleep(2)
     http_server_process.kill()
 
@@ -652,14 +622,14 @@ if HTTPS_CLIENT:
                                        args=('https',MAV6_IPV4,))
         https_server_process.start()
         sleep(5)
-        filetransfer_client_download(ip=MAV6_IPV4, device_protocol='ssh', 
+        filetransfer_client_download(server_ip=MAV6_IPV4, device_protocol='ssh', 
                                      transfer_protocol='https')
     else:
         https_server_process = Process(target=start_server, name='httpsserver', 
                                        args=('https',MAV6_IPV6,))
         https_server_process.start()
         sleep(5)
-        filetransfer_client_download(ip=MAV6_IPV6, device_protocol='ssh', 
+        filetransfer_client_download(server_ip=MAV6_IPV6, device_protocol='ssh', 
                                      transfer_protocol='https')
 
     # USE PYATS TO CREATE THE KEYS, TP, AUTHENTICATE THE ROOTCA.CRT, CREATE ROUTER CSR
