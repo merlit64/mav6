@@ -1,6 +1,6 @@
 ######## IMPORTED LIBRARIES ########
 ### STANDARD LIBRARIES ###
-from multiprocessing import Process, current_process
+from multiprocessing import Process, Queue
 from time import sleep
 from time import ctime
 import os
@@ -236,26 +236,18 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
     print('\n')
     return 1
 
-def snmp_start_trap_receiver(snmp_version=2, ip=MAV6_IPV4, port=162):
+def snmp_start_trap_receiver(q, snmp_version=2, ip=MAV6_IPV4, port=162):
     # This function will be called as its own process
 
     def cbFun(snmpEngine, stateReference, contextEngineId, contextName, varBinds, cbCtx):
         # Call back function, This runs when a trap is received
         print('Received a Trap!')
         for name, val in varBinds:
-            print(name.prettyPrint() + ' = ' + val.prettyPrint())
-
-    # Determine if this is an IPv4 or IPv6 address
-    try:
-        ip2 = ipaddr.IPAddress(ip)
-        
-    except:
-        # This is not an IPv4 or an IPv6 address
-        print(colored("IP address is malformed... Exiting", "red"))
-        exit()
+            print('Receiver: ' + name.prettyPrint() + ' = ' + val.prettyPrint())
+            q.put(name.prettyPrint() + ' = ' + val.prettyPrint())
 
     snmp_engine = engine.SnmpEngine(rfc1902.OctetString(hexValue='80000009030000c1b1129980'))
-    if (ip2.version == 4):
+    if (ip_version(ip) == 4):
         print('Using IPv4 as a Transport on receiver')
         config.addTransport(snmp_engine, udp.domainName, 
                             udp.UdpTransport().openServerMode((ip, port)) )
@@ -508,16 +500,6 @@ def filetransfer_client_download(ip='', device_protocol='ssh', transfer_protocol
 
 ### SERVER TESTS ###
 
-print("Executing Server Tests (where test box acts as the server):\n\n")
-try:
-    test_device_version = ipaddr.IPAddress(TEST_DEVICE).version
-    
-except:
-    # This is not an IPv4 or an IPv6 address
-    print(colored("IP address of TEST_DEVICE is malformed... Exiting", "red"))
-    exit()
-
-
 # Ping Server Test
 if PING_SERVER:
     ping_host(TEST_DEVICE)
@@ -641,7 +623,7 @@ if FTP_CLIENT:
 # HTTP client Test
 print('starting http server process')
 if HTTP_CLIENT:
-    if (test_device_version == 4):
+    if (ip_version(TEST_DEVICE) == 4):
         http_server_process = Process(target=start_server, name='httpserver', 
                                       args=('http', MAV6_IPV4,))
         http_server_process.start()
@@ -665,7 +647,7 @@ if HTTPS_CLIENT:
     # USE OS COMMANDS TO CREATE DIR, OPENSSL ROOTCA.KEY ROOTCA.CRT, SERVER.KEY, SERVER.CSR
     # SERVER.CRT, 
     print('starting https server process')
-    if (test_device_version == 4):
+    if (ip_version(TEST_DEVICE) == 4):
         https_server_process = Process(target=start_server, name='httpsserver', 
                                        args=('https',MAV6_IPV4,))
         https_server_process.start()
@@ -694,8 +676,9 @@ if SNMPV2_TRAP:
     else:
         mav6_ip = MAV6_IPV6
 
+    q = Queue()
     snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
-                                         args=(2, mav6_ip,162,))
+                                         args=(q,2, mav6_ip,162,))
 
     print('starting snmpv2 trap receiver process')
     snmp_trap_receiver_process.start()
@@ -707,9 +690,28 @@ if SNMPV2_TRAP:
     device, testbed = connect_host('mgmt', 'ssh')
     device.configure ('snmp-server host ' + mav6_ip + ' traps version 2c ' + COM_RW + \
                       ' udp-port 162 config\n' )
-    
-    # SHOULD HAVE RECIEVED A TRAP FROM THE CONFIGURATION ABOVE
-    # CONFIRM TRAP AND PRINT SUCCESS OR FAILURE TO THE SCREEN
+
+    sleep(5)    
+
+    # Check the queue created by the SNMP receiver for a trap sent by TEST_DEVICE
+    received_snmp = False
+    while(not q.empty()):
+        message = q.get()
+        if('my system' in message):
+            print('SNMPv3 message arrived at receiver from snmp_trap_send') 
+        elif('***REMOVED***' in message):
+            print('SNMPv3 message arrived at receiver from TEST_DEVICE')
+            received_snmp = True
+        else:
+            # Unknown SNMP sender
+            pass 
+
+    # Print Test results to screen
+    if (received_snmp):
+        print(colored("SNMPv3 Trap Test Successful", "green"))
+    else:
+        print(colored("SNMPv3 Trap Test Failed", "red"))
+
 
     sleep(2)
     snmp_trap_receiver_process.kill()
@@ -721,8 +723,9 @@ if SNMPV3_TRAP:
     else:
         mav6_ip = MAV6_IPV6
 
+    q = Queue()
     snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
-                                        args=(3, mav6_ip,162,))
+                                        args=(q,3, mav6_ip,162,))
 
     print('starting snmpv3 trap receiver process')
     snmp_trap_receiver_process.start()
@@ -737,10 +740,28 @@ if SNMPV3_TRAP:
                         'snmp-server enable traps\n' + \
                         'snmp-server host ' + mav6_ip + ' traps version 3 noauth mav6user\n'
                         )
-    
-    # SHOULD HAVE RECIEVED A TRAP FROM THE CONFIGURATION ABOVE
-    # CONFIRM TRAP AND PRINT SUCCESS OR FAILURE TO THE SCREEN
+    sleep(5) 
 
+    # Check the queue created by the SNMP receiver for a trap sent by TEST_DEVICE
+    received_snmp = False
+    while(not q.empty()):
+        message = q.get()
+        if('my system' in message):
+            print('SNMPv3 message arrived at receiver from snmp_trap_send') 
+        elif('***REMOVED***' in message):
+            print('SNMPv3 message arrived at receiver from TEST_DEVICE')
+            received_snmp = True
+        else:
+            # Unknown SNMP sender
+            pass 
+
+    # Print Test results to screen
+    if (received_snmp):
+        print(colored("SNMPv3 Trap Test Successful", "green"))
+    else:
+        print(colored("SNMPv3 Trap Test Failed", "red"))
+
+    
     sleep(2)
     snmp_trap_receiver_process.kill()
 
