@@ -1,8 +1,7 @@
 ######## IMPORTED LIBRARIES ########
 ### STANDARD LIBRARIES ###
 from multiprocessing import Process, Queue
-from time import sleep
-from time import ctime
+from time import sleep, ctime
 import os
 import ssl
 import socket
@@ -25,7 +24,6 @@ from pysnmp.entity import engine, config
 from pysnmp.entity.rfc3413 import ntfrcv, context, cmdrsp
 from pysnmp.proto import rfc1902
 
-
 # for NTP test
 import ntplib
 
@@ -45,7 +43,7 @@ from pyftpdlib.authorizers import DummyAuthorizer
 ######## FUNCTIONS #######
 def ip_version(ip):
     try:
-        test_device_ipaddr = ipaddr.IPAddress(TEST_DEVICE)
+        test_device_ipaddr = ipaddr.IPAddress(ip)
     except:
         # This is not an IPv4 or an IPv6 address
         print(colored("IP address is malformed... Exiting", "red"))
@@ -59,6 +57,40 @@ def ip_version(ip):
         # This is not an IPv4 or an IPv6 address
         print(colored("IP address is malformed... Exiting", "red"))
         exit()
+
+
+# pyATS Connection Function
+# device - hostname of device being tested
+# protocol - connection protocol being tested (telnet or ssh)
+# command - command used to test connection
+def connect_host(device = '', protocol = '', command = ' '):
+    testbed = loader.load('pyATS/testbed.yaml')
+
+    test = testbed.devices[device]
+
+    test.connect(via = protocol, log_stdout=False)
+
+    if (not command.isspace):
+        device.execute(command)
+
+    return test, testbed
+
+
+def file_on_flash(device, filename='test.txt'):
+    result = device.execute('dir ' + filename)
+    if ('No such file' in result):
+        return False
+    else:
+        return True
+
+
+def del_from_flash(device, filename='test.txt'):
+    result = device.execute('del ' + filename + '\n\n\n')
+    print(result)
+    if ('Error deleting' in result):
+        return False
+    else:
+        return True
 
 
 def ping_host(ip):
@@ -79,21 +111,6 @@ def ping_client(device = ''):
     print(device.ping(LOCAL_DEVICE))
 
     
-# pyATS Connection Function
-# device - hostname of device being tested
-# protocol - connection protocol being tested (telnet or ssh)
-# command - command used to test connection
-def connect_host(device = '', protocol = '', command = ' '):
-    testbed = loader.load('pyATS/testbed.yaml')
-
-    test = testbed.devices[device]
-
-    test.connect(via = protocol, log_stdout=False)
-
-    if (not command.isspace):
-        device.execute(command)
-
-    return test, testbed
     
 # HTTP Test Function
 # verify - uses HTTPS if set to false
@@ -219,6 +236,7 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
                 print(' = '.join([x.prettyPrint() for x in varBind]))
     print('\n')
     return 1
+
 
 def snmp_start_trap_receiver(q, snmp_version=2, ip=MAV6_IPV4, port=162):
     # This function will be called as its own process
@@ -419,31 +437,31 @@ def filetransfer_client_download(server_ip='', device_protocol='ssh', transfer_p
     router_conn = conn.invoke_shell()
     print("Connected to Router\n")
 
-    if ( ip_version(ip) == 6 ):
-        ip = '[' + ip + ']'
+    if ( ip_version(server_ip) == 6 ):
+        server_ip = '[' + server_ip + ']'
 
     if (transfer_protocol == 'tftp'):
         # NEED TO GET TO THE ENABLE PROMPT FIRST
         # NEED ERROR CHECKING
-        command = 'copy tftp://' + ip + '/test.txt flash:/\n\n\n' 
+        command = 'copy tftp://' + server_ip + '/test.txt flash:/\n\n\n' 
         router_conn.send(command)
         sleep(5)
         print(router_conn.recv(5000).decode('utf-8'))
     elif (transfer_protocol == 'ftp'):
         # NEED TO GET TO THE ENABLE PROMPT FIRST
         # NEED ERROR CHECKING
-        command = 'copy ftp://paul:elephant060@' + ip + '/test.txt flash:/\n\n\n' 
+        command = 'copy ftp://paul:elephant060@' + server_ip + '/test.txt flash:/\n\n\n' 
         router_conn.send(command)
         sleep(5)
         print(router_conn.recv(5000).decode('utf-8'))
     elif (transfer_protocol == 'http'):
-        command = 'copy http://' + ip + '/test.txt flash:/\n\n\n' 
+        command = 'copy http://' + server_ip + '/test.txt flash:/\n\n\n' 
         
         router_conn.send(command)
         sleep(5)
         print(router_conn.recv(5000).decode('utf-8'))
     elif (transfer_protocol == 'https'):
-        command = 'copy https://' + ip + '/test.txt flash:/\n\n\n' 
+        command = 'copy https://' + server_ip + '/test.txt flash:/\n\n\n' 
         router_conn.send(command)
         sleep(5)
         print(router_conn.recv(5000).decode('utf-8'))
@@ -560,21 +578,35 @@ if PING_CLIENT:
 
 # TFTP client Test
 if TFTP_CLIENT:
+    # Connect to test device and check for test file on flash
+    device, testbed = connect_host( device='mgmt', protocol='ssh')
+    if(file_on_flash(device, filename='test.txt')):
+        del_from_flash(device, 'test.txt')
+    
     tftp_server_process = Process(target=start_server, name='tftpserver', args=('tftp',))
 
     print('starting tftp server process')
     tftp_server_process.start()
     sleep(5)
+
     filetransfer_client_download(server_ip='10.112.1.106', device_protocol='ssh', transfer_protocol='tftp')
 
-    # CHECK TO SEE IF THE FILE IS ON THE FLASH
-    # SEND A SUCCESS OR FAILURE MESSAGE TO THE SCREEN
-
+    # Check to see if file transfer was successful and print message
+    if (file_on_flash(device, filename='test.txt')):
+        print(colored("TFTP Client Test Successful", "green"))
+    else:
+        print(colored("TFTP Client Test Failed", "red"))
+    
     sleep(2)
     tftp_server_process.kill()
 
 # FTP Client test
 if FTP_CLIENT:
+    # Connect to test device and check for test file on flash
+    device, testbed = connect_host( device='mgmt', protocol='ssh')
+    if(file_on_flash(device, filename='test.txt')):
+        del_from_flash(device, 'test.txt')
+
     ftp_server_process = Process(target=start_server, name='ftpserver', args=('ftp',))
     #ftp_client_process = Process(target=filetransfer_client_download, name='filetransfer_client')
     print('starting ftp server process')
@@ -583,14 +615,22 @@ if FTP_CLIENT:
 
     filetransfer_client_download(server_ip='10.112.1.106', device_protocol='ssh', transfer_protocol='ftp')
 
-    # CHECK TO SEE IF THE FILE IS ON THE FLASH
-    # SEND A SUCCESS OR FAILURE MESSAGE TO THE SCREEN
-
+    # Check to see if file transfer was successful and print message
+    if (file_on_flash(device, filename='test.txt')):
+        print(colored("TFTP Client Test Successful", "green"))
+    else:
+        print(colored("TFTP Client Test Failed", "red"))
+    
     sleep(2)
     ftp_server_process.kill()
 
 # HTTP client Test
 if HTTP_CLIENT:
+    # Connect to test device and check for test file on flash
+    device, testbed = connect_host( device='mgmt', protocol='ssh')
+    if(file_on_flash(device, filename='test.txt')):
+        del_from_flash(device, 'test.txt')
+
     print('starting http server process')
     if (ip_version(TEST_DEVICE) == 4):
         http_server_process = Process(target=start_server, name='httpserver', 
@@ -606,14 +646,23 @@ if HTTP_CLIENT:
         sleep(5)
         filetransfer_client_download(server_ip=MAV6_IPV6, device_protocol='ssh', 
                                      transfer_protocol='http')
-    # CHECK TO SEE IF THE FILE IS ON THE FLASH
-    # SEND A SUCCESS OR FAILURE MESSAGE TO THE SCREEN
+    # Check to see if file transfer was successful and print message
+    if (file_on_flash(device, filename='test.txt')):
+        print(colored("TFTP Client Test Successful", "green"))
+    else:
+        print(colored("TFTP Client Test Failed", "red"))
+    
     sleep(2)
     http_server_process.kill()
 
 
 # HTTPS client Test
 if HTTPS_CLIENT:
+    # Connect to test device and check for test file on flash
+    device, testbed = connect_host( device='mgmt', protocol='ssh')
+    if(file_on_flash(device, filename='test.txt')):
+        del_from_flash(device, 'test.txt')
+    
     # USE OS COMMANDS TO CREATE DIR, OPENSSL ROOTCA.KEY ROOTCA.CRT, SERVER.KEY, SERVER.CSR
     # SERVER.CRT, 
     print('starting https server process')
@@ -635,6 +684,13 @@ if HTTPS_CLIENT:
     # USE PYATS TO CREATE THE KEYS, TP, AUTHENTICATE THE ROOTCA.CRT, CREATE ROUTER CSR
     # USE OS COMMANES TO SIGN THE CSR
     # USE PYATS TO INSTALL THE ROUTER CERT
+
+    # Check to see if file transfer was successful and print message
+    if (file_on_flash(device, filename='test.txt')):
+        print(colored("TFTP Client Test Successful", "green"))
+    else:
+        print(colored("TFTP Client Test Failed", "red"))
+    
     sleep(2)
     https_server_process.kill()
 
