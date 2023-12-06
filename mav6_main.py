@@ -59,19 +59,20 @@ def ip_version(ip):
         exit()
 
 
+def connect_host(device = '', protocol = '', command = ' '):
 # pyATS Connection Function
 # device - hostname of device being tested
 # protocol - connection protocol being tested (telnet or ssh)
 # command - command used to test connection
-def connect_host(device = '', protocol = '', command = ' '):
     testbed = loader.load('pyATS/testbed.yaml')
 
     test = testbed.devices[device]
 
     test.connect(via = protocol, log_stdout=False)
 
-    if (not command.isspace):
-        device.execute(command)
+    if (not command.isspace()):
+        test.configure('file prompt quiet')
+        test.execute(command)
 
     return test, testbed
 
@@ -112,9 +113,9 @@ def ping_client(device = ''):
 
     
     
+def http_test(ip= '', verify = True):
 # HTTP Test Function
 # verify - uses HTTPS if set to false
-def http_test(ip= '', verify = True):
     try:
         ip2 = ipaddr.IPAddress(ip)
         print(colored(("IP address is good.  Version is IPv%s" % ip2.version), "green"))
@@ -142,28 +143,6 @@ def http_test(ip= '', verify = True):
 
 
 # SNMP Test Functions
-
-'''
-class Udp6TransportTarget(UdpTransportTarget):
-    # SNMP over IPv6 tweaks
-    transportDomain = udp6.domainName
-
-    def __init__(self, transportAddr, timeout=1, retries=5, tagList=b'', iface=''):
-        self.transportAddr = (
-            socket.getaddrinfo(transportAddr[0], transportAddr[1],
-                               socket.AF_INET6,
-                               socket.SOCK_DGRAM,
-                               socket.IPPROTO_UDP)[0][4]
-            )
-        self.timeout = timeout
-        self.retries = retries
-        self.tagList = tagList
-        self.iface = iface
-
-    def openClientMode(self):
-        self.transport = udp6.Udp6SocketTransport().openClientMode()
-        return self.transport
-'''
     
 def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = "v2", action = "read", 
               community="public", userName=None, authKey=None, privKey=None,  
@@ -366,7 +345,13 @@ def tftp_server_download( ip, port=69, filename='test.cfg' ):
 
 
 def start_server(transfer_protocol='tftp', ip=MAV6_IPV4):
-
+    # This function will be called as a new process
+    # It will start an embedded tftp, ftp or http(s) server
+    # for the test device to act as a client against
+    #
+    # transerfer_protol = tftp, ftp or http
+    # ip = The IP address the embedded server will listen on
+    #
     if (transfer_protocol == 'tftp'):
         print('starting tftp server...')
         server = TftpServer('.')
@@ -420,23 +405,17 @@ def start_server(transfer_protocol='tftp', ip=MAV6_IPV4):
         print('No embedded server for ' + transfer_protocol)
 
 
-def filetransfer_client_download(server_ip='', device_protocol='ssh', transfer_protocol='tftp'):
+def filetransfer_client_download(device_hostname='', device_protocol='ssh',
+                                 server_ip='', transfer_protocol='tftp'):
     # From the test subjects perspective
-    # The test device acts as a tftp client 
-    # mav6 acts as the tftp server
-    # The test subject tries to download a file from mav6 tftp server.
+    # The test device acts as a tftp, ftp or http(s) client 
+    # The test subject tries to download a file from mav6 embedded server.
     #
-    # ip - the name of the test device in the testbed yaml file
+    # server_ip - the ip address of the embedded mav6 server in the testbed yaml file
     # device_protocol - the protocol used to connect to the test device ssh or telnet
     # transfer_protocol - file transfer protocol to test, tftp (ftp, scp, http are futures)
 
     # First connect to the test device
-    conn = paramiko.SSHClient()
-    conn.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    conn.connect(TEST_DEVICE, username=CLI_USER, password= USER_PASS)
-    router_conn = conn.invoke_shell()
-    print("Connected to Router\n")
-
     if ( ip_version(server_ip) == 6 ):
         server_ip = '[' + server_ip + ']'
 
@@ -444,32 +423,25 @@ def filetransfer_client_download(server_ip='', device_protocol='ssh', transfer_p
         # NEED TO GET TO THE ENABLE PROMPT FIRST
         # NEED ERROR CHECKING
         command = 'copy tftp://' + server_ip + '/test.txt flash:/\n\n\n' 
-        router_conn.send(command)
+        connect_host(device=device_hostname, protocol='ssh', command=command)
         sleep(5)
-        print(router_conn.recv(5000).decode('utf-8'))
     elif (transfer_protocol == 'ftp'):
         # NEED TO GET TO THE ENABLE PROMPT FIRST
         # NEED ERROR CHECKING
         command = 'copy ftp://paul:elephant060@' + server_ip + '/test.txt flash:/\n\n\n' 
-        router_conn.send(command)
+        connect_host(device=device_hostname, protocol='ssh', command=command)
         sleep(5)
-        print(router_conn.recv(5000).decode('utf-8'))
     elif (transfer_protocol == 'http'):
         command = 'copy http://' + server_ip + '/test.txt flash:/\n\n\n' 
-        
-        router_conn.send(command)
+        connect_host(device=device_hostname, protocol='ssh', command=command)
         sleep(5)
-        print(router_conn.recv(5000).decode('utf-8'))
     elif (transfer_protocol == 'https'):
         command = 'copy https://' + server_ip + '/test.txt flash:/\n\n\n' 
-        router_conn.send(command)
+        connect_host(device=device_hostname, protocol='ssh', command=command)
         sleep(5)
-        print(router_conn.recv(5000).decode('utf-8'))
     else:
         print("File transfer protocol not supported.")
         exit()
-
-    # CONFIRM FILE ARRIVED AND RETURN RESULTS
 
  
 ######## MAIN PROGRAM ########
@@ -579,7 +551,7 @@ if PING_CLIENT:
 # TFTP client Test
 if TFTP_CLIENT:
     # Connect to test device and check for test file on flash
-    device, testbed = connect_host( device='mgmt', protocol='ssh')
+    device, testbed = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
     if(file_on_flash(device, filename='test.txt')):
         del_from_flash(device, 'test.txt')
     
@@ -589,7 +561,8 @@ if TFTP_CLIENT:
     tftp_server_process.start()
     sleep(5)
 
-    filetransfer_client_download(server_ip='10.112.1.106', device_protocol='ssh', transfer_protocol='tftp')
+    filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME, device_protocol='ssh',
+                                 server_ip='10.112.1.106', transfer_protocol='tftp')
 
     # Check to see if file transfer was successful and print message
     if (file_on_flash(device, filename='test.txt')):
@@ -603,23 +576,23 @@ if TFTP_CLIENT:
 # FTP Client test
 if FTP_CLIENT:
     # Connect to test device and check for test file on flash
-    device, testbed = connect_host( device='mgmt', protocol='ssh')
+    device, testbed = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
     if(file_on_flash(device, filename='test.txt')):
         del_from_flash(device, 'test.txt')
 
     ftp_server_process = Process(target=start_server, name='ftpserver', args=('ftp',))
-    #ftp_client_process = Process(target=filetransfer_client_download, name='filetransfer_client')
     print('starting ftp server process')
     ftp_server_process.start()
     sleep(5)
 
-    filetransfer_client_download(server_ip='10.112.1.106', device_protocol='ssh', transfer_protocol='ftp')
+    filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME, device_protocol='ssh',
+                                 server_ip='10.112.1.106', transfer_protocol='ftp')
 
     # Check to see if file transfer was successful and print message
     if (file_on_flash(device, filename='test.txt')):
-        print(colored("TFTP Client Test Successful", "green"))
+        print(colored("FTP Client Test Successful", "green"))
     else:
-        print(colored("TFTP Client Test Failed", "red"))
+        print(colored("FTP Client Test Failed", "red"))
     
     sleep(2)
     ftp_server_process.kill()
@@ -627,7 +600,7 @@ if FTP_CLIENT:
 # HTTP client Test
 if HTTP_CLIENT:
     # Connect to test device and check for test file on flash
-    device, testbed = connect_host( device='mgmt', protocol='ssh')
+    device, testbed = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
     if(file_on_flash(device, filename='test.txt')):
         del_from_flash(device, 'test.txt')
 
@@ -637,20 +610,20 @@ if HTTP_CLIENT:
                                       args=('http', MAV6_IPV4,))
         http_server_process.start()
         sleep(5)
-        filetransfer_client_download(server_ip=MAV6_IPV4, device_protocol='ssh', 
-                                     transfer_protocol='http')
+        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME, device_protocol='ssh', 
+                                     server_ip=MAV6_IPV4, transfer_protocol='http')
     else:
         http_server_process = Process(target=start_server, name='httpserver', 
                                       args=('http',MAV6_IPV6,))
         http_server_process.start()
         sleep(5)
-        filetransfer_client_download(server_ip=MAV6_IPV6, device_protocol='ssh', 
-                                     transfer_protocol='http')
+        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME,  device_protocol='ssh',
+                                     server_ip=MAV6_IPV6, transfer_protocol='http')
     # Check to see if file transfer was successful and print message
     if (file_on_flash(device, filename='test.txt')):
-        print(colored("TFTP Client Test Successful", "green"))
+        print(colored("HTTP Client Test Successful", "green"))
     else:
-        print(colored("TFTP Client Test Failed", "red"))
+        print(colored("HTTP Client Test Failed", "red"))
     
     sleep(2)
     http_server_process.kill()
@@ -659,7 +632,7 @@ if HTTP_CLIENT:
 # HTTPS client Test
 if HTTPS_CLIENT:
     # Connect to test device and check for test file on flash
-    device, testbed = connect_host( device='mgmt', protocol='ssh')
+    device, testbed = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
     if(file_on_flash(device, filename='test.txt')):
         del_from_flash(device, 'test.txt')
     
@@ -671,15 +644,15 @@ if HTTPS_CLIENT:
                                        args=('https',MAV6_IPV4,))
         https_server_process.start()
         sleep(5)
-        filetransfer_client_download(server_ip=MAV6_IPV4, device_protocol='ssh', 
-                                     transfer_protocol='https')
+        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME,  device_protocol='ssh',
+                                     server_ip=MAV6_IPV4, transfer_protocol='https')
     else:
         https_server_process = Process(target=start_server, name='httpsserver', 
                                        args=('https',MAV6_IPV6,))
         https_server_process.start()
         sleep(5)
-        filetransfer_client_download(server_ip=MAV6_IPV6, device_protocol='ssh', 
-                                     transfer_protocol='https')
+        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME,  device_protocol='ssh',
+                                     server_ip=MAV6_IPV6, transfer_protocol='https')
 
     # USE PYATS TO CREATE THE KEYS, TP, AUTHENTICATE THE ROOTCA.CRT, CREATE ROUTER CSR
     # USE OS COMMANES TO SIGN THE CSR
@@ -687,9 +660,9 @@ if HTTPS_CLIENT:
 
     # Check to see if file transfer was successful and print message
     if (file_on_flash(device, filename='test.txt')):
-        print(colored("TFTP Client Test Successful", "green"))
+        print(colored("HTTPS Client Test Successful", "green"))
     else:
-        print(colored("TFTP Client Test Failed", "red"))
+        print(colored("HTTPS Client Test Failed", "red"))
     
     sleep(2)
     https_server_process.kill()
@@ -713,7 +686,7 @@ if SNMPV2_TRAP:
     #snmp_trap_send(destination=mav6_ip, port=162, snmp_version=2)
     
     # Configure TEST_DEVICE to send SNMP traps to trap receiver
-    device, testbed = connect_host('mgmt', 'ssh')
+    device, testbed = connect_host(TEST_DEVICE_HOSTNAME, 'ssh')
     device.configure ('snmp-server host ' + mav6_ip + ' traps version 2c ' + COM_RW + \
                       ' udp-port 162 config\n' )
 
@@ -760,7 +733,7 @@ if SNMPV3_TRAP:
     snmp_trap_send(destination=mav6_ip, port=162, snmp_version=3)
 
     # Configure TEST_DEVICE to send SNMP traps to trap receiver
-    device, testbed = connect_host('mgmt', 'ssh')
+    device, testbed = connect_host(TEST_DEVICE_HOSTNAME, 'ssh')
     device.configure ('snmp-server group mav6group v3 noauth\n' + \
                         'snmp-server user mav6user mav6group v3\n' + \
                         'snmp-server enable traps\n' + \
