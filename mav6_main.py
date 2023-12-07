@@ -42,6 +42,9 @@ from pyftpdlib.authorizers import DummyAuthorizer
 
 ######## FUNCTIONS #######
 def ip_version(ip):
+    # ip_version takes in ip address and returns 4 or 6 (int)
+    # ip - a string which must be an ipv4 or v6 address
+
     try:
         test_device_ipaddr = ipaddr.IPAddress(ip)
     except:
@@ -60,14 +63,12 @@ def ip_version(ip):
 
 
 def connect_host(device = '', protocol = '', command = ' '):
-# pyATS Connection Function
-# device - hostname of device being tested
-# protocol - connection protocol being tested (telnet or ssh)
-# command - command used to test connection
+    # pyATS Connection Function
+    # device - hostname of device being tested
+    # protocol - connection protocol being tested (telnet or ssh)
+    # command - command used to test connection
     testbed = loader.load('pyATS/testbed.yaml')
-
     test = testbed.devices[device]
-
     test.connect(via = protocol, log_stdout=False)
 
     if (not command.isspace()):
@@ -78,7 +79,12 @@ def connect_host(device = '', protocol = '', command = ' '):
 
 
 def file_on_flash(device, filename='test.txt'):
+    # Checks to see if filename exists on the flash of the given device
+    # Returns True or False
+    # device - pyats device object
+    # filename - name of the file to look for on the flash
     result = device.execute('dir ' + filename)
+
     if ('No such file' in result):
         return False
     else:
@@ -86,6 +92,12 @@ def file_on_flash(device, filename='test.txt'):
 
 
 def del_from_flash(device, filename='test.txt'):
+    # Deletes a file from the flash
+    # Returns True if file was succeesfully delted, False if not
+    # device - pyATS device object
+    # filename - Name of the file to delete
+
+    # USE PYATS DELETE FUNCTION INSTEAD
     result = device.execute('del ' + filename + '\n\n\n')
     print(result)
     if ('Error deleting' in result):
@@ -95,6 +107,8 @@ def del_from_flash(device, filename='test.txt'):
 
 
 def ping_host(ip):
+    # ping_host uses os commands to ping an ip address then returns True/False
+    # ip - ip address to ping, v4 or v6
     if ( ip_version(ip) == 4 ):
         response = os.system("ping -c 1 " + ip)
     else:
@@ -107,14 +121,15 @@ def ping_host(ip):
 
 
 def ping_client(device = ''):
+    # ping_client connects to the test device and tries to ping an
+    #   ip address from there.
     device, testbed = connect_host(device, 'ssh')
     print(colored(('Attempting ping client test...'), 'yellow'))
     print(device.ping(LOCAL_DEVICE))
 
     
-    
 def http_test(ip= '', verify = True):
-# HTTP Test Function
+# http_test makes an http get request to the test device
 # verify - uses HTTPS if set to false
     try:
         ip2 = ipaddr.IPAddress(ip)
@@ -218,7 +233,14 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
 
 
 def snmp_start_trap_receiver(q, snmp_version=2, ip=MAV6_IPV4, port=162):
-    # This function will be called as its own process
+    # snmp_start_trap_receiver will be called as its own process
+    #   It starts a MAV6 embedded trap reciever that will
+    #   collect SNMP traps from the test device
+    #
+    # q - a multiprocess communications q that received traps will be pushed onto
+    # snmp_version - 2 or 3
+    # ip - ip address (v4 or v6) the MAV6 trap receiver will listen on
+    # port - The port the MAV6 trap receiver will listen on
 
     def cbFun(snmpEngine, stateReference, contextEngineId, contextName, varBinds, cbCtx):
         # Call back function, This runs when a trap is received
@@ -263,9 +285,12 @@ def snmp_start_trap_receiver(q, snmp_version=2, ip=MAV6_IPV4, port=162):
 
 
 def snmp_trap_send(destination=MAV6_IPV4, port=162, snmp_version = 2):
-    # This function is strictly for testing the trap receiver
-    # It may never be used in normal mav6 operation
-    # in Normal operation the routers should send the traps to the reciever
+    # snmp_trap_send is strictly for testing the trap receiver
+    #   It may never be used in normal mav6 operation
+    #   in Normal operation the routers should send the traps to the reciever
+    # destination - The ip of the trap will be sent to
+    # port - The port the trap will be sent to
+    # snmp_version - 2 or 3
     if (snmp_version == 2):
         iterator = sendNotification (
             SnmpEngine(),
@@ -319,6 +344,9 @@ def tftp_server_download( ip, port=69, filename='test.cfg' ):
     # The test device acts as a tftp server 
     # mav6 tries to download a file from the test subject tftp server.
     #
+    # ip - ip address of the test device where tftp-server runs
+    # port - udp port of the tftp server
+    # filename - the file name to download from the test device
     if ( ip_version(ip) == 4 ):
         print(colored("Attempting TFTP download via IPv4", "yellow"))        
         client = TftpClient(ip, port)
@@ -345,7 +373,7 @@ def tftp_server_download( ip, port=69, filename='test.cfg' ):
 
 
 def start_server(transfer_protocol='tftp', ip=MAV6_IPV4):
-    # This function will be called as a new process
+    # start_server will be called as a new process
     # It will start an embedded tftp, ftp or http(s) server
     # for the test device to act as a client against
     #
