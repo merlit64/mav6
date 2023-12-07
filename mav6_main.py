@@ -411,23 +411,20 @@ def filetransfer_client_download(device_hostname='', device_protocol='ssh',
     # The test device acts as a tftp, ftp or http(s) client 
     # The test subject tries to download a file from mav6 embedded server.
     #
-    # server_ip - the ip address of the embedded mav6 server in the testbed yaml file
+    # device_hostname - use this to connect to the device with connect_host function (pyats)
     # device_protocol - the protocol used to connect to the test device ssh or telnet
-    # transfer_protocol - file transfer protocol to test, tftp (ftp, scp, http are futures)
+    # server_ip - the ip address of the embedded mav6 server (tftp, ftp, http, etc)
+    # transfer_protocol - file transfer protocol to test, tftp (ftp, scp, http, etc)
 
     # First connect to the test device
     if ( ip_version(server_ip) == 6 ):
         server_ip = '[' + server_ip + ']'
 
     if (transfer_protocol == 'tftp'):
-        # NEED TO GET TO THE ENABLE PROMPT FIRST
-        # NEED ERROR CHECKING
         command = 'copy tftp://' + server_ip + '/test.txt flash:/\n\n\n' 
         connect_host(device=device_hostname, protocol='ssh', command=command)
         sleep(5)
     elif (transfer_protocol == 'ftp'):
-        # NEED TO GET TO THE ENABLE PROMPT FIRST
-        # NEED ERROR CHECKING
         command = 'copy ftp://paul:elephant060@' + server_ip + '/test.txt flash:/\n\n\n' 
         connect_host(device=device_hostname, protocol='ssh', command=command)
         sleep(5)
