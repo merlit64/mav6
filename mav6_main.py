@@ -68,14 +68,17 @@ def connect_host(device = '', protocol = '', command = ' '):
     # protocol - connection protocol being tested (telnet or ssh)
     # command - command used to test connection
     testbed = loader.load('pyATS/testbed.yaml')
-    test = testbed.devices[device]
-    test.connect(via = protocol, log_stdout=False)
-
+    try:
+        dev = testbed.devices[device]
+        dev.connect(via = protocol, log_stdout=False)
+    except:
+        return Null, Null
+    
     if (not command.isspace()):
-        test.configure('file prompt quiet')
-        test.execute(command)
+        dev.configure('file prompt quiet')
+        dev.execute(command)
 
-    return test, testbed
+    return dev, testbed
 
 
 def file_on_flash(device, filename='test.txt'):
@@ -104,6 +107,20 @@ def del_from_flash(device, filename='test.txt'):
         return False
     else:
         return True
+
+def file_on_mav(filename=''):
+    # Return True if file exists on mav6 box, False if not
+    # filename - name of the file to look for
+    if os.path.isfile(filename):
+        return True
+    else:
+        return False
+
+
+def del_from_mav(filename=''):
+    # Delete this file from mav6 box
+    # filename - name of file to delete
+    os.remove(filename)
 
 
 def ping_host(ip):
@@ -356,15 +373,15 @@ def tftp_server_download( ip, port=69, filename='test.cfg' ):
 
     try:
         # CHECK HERE TO SEE IF FILE IS ALREADY LOCAL
-        if os.path.isfile(filename):
+        if file_on_mav(filename):
             print("tftp test download file exists locally... deleting")
-            os.remove(filename)
+            del_from_mav(filename)
             sleep(1)
         else:
             print("tftp test download file does not exist locally... continuing")
         client.download(filename, filename)
         # CHECK HERE TO SEE IF FILE IS LOCAL
-        if os.path.isfile(filename):
+        if file_on_mav(filename):
             print(colored("TFTP Download success!!!", "green"))
         else:
             print(colored("TFTP Download failed", "red"))
@@ -383,7 +400,7 @@ def start_server(transfer_protocol='tftp', ip=MAV6_IPV4):
     if (transfer_protocol == 'tftp'):
         print('starting tftp server...')
         server = TftpServer('.')
-        server.listen('0.0.0.0', 69)
+        server.listen('', 69)
     elif (transfer_protocol == 'ftp'):
         print('starting ftp server...')
         authorizer = DummyAuthorizer()
@@ -479,16 +496,29 @@ def filetransfer_client_download(device_hostname='', device_protocol='ssh',
 
 # Ping Server Test
 if PING_SERVER:
-    ping_host(TEST_DEVICE)
+    result = ping_host(TEST_DEVICE)
+    if (result):
+        print(colored("Ping Server Test Success", "green"))
+    else:
+        print(colored("Ping Server Test Failed", "red"))
 
 
 # Telnet Server Test
 if TELNET_SERVER:
-    connect_host('mgmt', 'telnet')
+    device = connect_host(TEST_DEVICE_HOSTNAME, 'telnet')
+    if (device == Null):
+        print(colored("Telnet Server Test Failed", "red"))
+    else:
+        print(colored("Telnet Server Test Success", "green"))
+
 
 # SSH Server Test
 if SSH_SERVER:
-    connect_host('mgmt', 'ssh')
+    device = connect_host('mgmt', 'ssh')
+    if (device == Null):
+        print(colored("SSH Server Test Failed", "red"))
+    else:
+        print(colored("SSH Server Test Success", "green"))
 
 
 # SCP Server Test
@@ -496,6 +526,7 @@ if SCP_SERVER:
     command = 'sshpass -p "' + PRIV_KEY + '" scp test.txt ' + CLI_USER + '@[' + TEST_DEVICE + ']:flash:/test.txt'
     os.system(command)
     print(colored(("SCP Server Test Attempted"), "green"))
+
 
 # TFTP Server Test
 if TFTP_SERVER:
