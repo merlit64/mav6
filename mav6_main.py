@@ -400,7 +400,10 @@ def start_server(transfer_protocol='tftp', ip=MAV6_IPV4):
     if (transfer_protocol == 'tftp'):
         print('starting tftp server...')
         server = TftpServer('.')
-        server.listen('', 69)
+        if (ip_version(ip) == 6):
+            server.listen('', 69, af_family=socket.AF_INET6)
+        else:
+            server.listen('', 69)
     elif (transfer_protocol == 'ftp'):
         print('starting ftp server...')
         authorizer = DummyAuthorizer()
