@@ -401,16 +401,16 @@ def start_server(transfer_protocol='tftp', ip=MAV6_IPV4):
         print('starting tftp server...')
         server = TftpServer('.')
         if (ip_version(ip) == 6):
-            server.listen('', 69, af_family=socket.AF_INET6)
+            server.listen(ip, 69, af_family=socket.AF_INET6)
         else:
-            server.listen('', 69)
+            server.listen(ip, 69)
     elif (transfer_protocol == 'ftp'):
         print('starting ftp server...')
         authorizer = DummyAuthorizer()
         authorizer.add_user('paul', 'elephant060', '.')
         handler = FTPHandler
         handler.authorizer = authorizer
-        server = FTPServer(('',21), handler)
+        server = FTPServer((ip,21), handler)
         server.serve_forever()
     elif (transfer_protocol == 'sftp'):
         print('No embedded server for ' + transfer_protocol)
@@ -613,15 +613,25 @@ if TFTP_CLIENT:
     device, testbed = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
     if(file_on_flash(device, filename='test.txt')):
         del_from_flash(device, 'test.txt')
-    
-    tftp_server_process = Process(target=start_server, name='tftpserver', args=('tftp',))
+    if (ip_version(TEST_DEVICE) == 4):
+        tftp_server_process = Process(target=start_server, name='tftpserver', 
+                                      args=('tftp', MAV6_IPV4,))
+    else:
+        tftp_server_process = Process(target=start_server, name='tftpserver', 
+                                      args=('tftp', MAV6_IPV6,))
+
 
     print('starting tftp server process')
     tftp_server_process.start()
     sleep(5)
 
-    filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME, device_protocol='ssh',
-                                 server_ip='10.112.1.106', transfer_protocol='tftp')
+    if (ip_version(TEST_DEVICE) == 4):
+        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME, device_protocol='ssh',
+                                 server_ip=MAV6_IPV4, transfer_protocol='tftp')
+    else:
+        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME, device_protocol='ssh',
+                                 server_ip=MAV6_IPV6, transfer_protocol='tftp')
+
 
     # Check to see if file transfer was successful and print message
     if (file_on_flash(device, filename='test.txt')):
@@ -639,13 +649,24 @@ if FTP_CLIENT:
     if(file_on_flash(device, filename='test.txt')):
         del_from_flash(device, 'test.txt')
 
-    ftp_server_process = Process(target=start_server, name='ftpserver', args=('ftp',))
+    if (ip_version(TEST_DEVICE) == 4):
+        ftp_server_process = Process(target=start_server, name='ftpserver', 
+                                     args=('ftp',MAV6_IPV4,))
+    else:
+        ftp_server_process = Process(target=start_server, name='ftpserver', 
+                                     args=('ftp',MAV6_IPV6,))
+        
     print('starting ftp server process')
     ftp_server_process.start()
     sleep(5)
 
-    filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME, device_protocol='ssh',
-                                 server_ip='10.112.1.106', transfer_protocol='ftp')
+    if (ip_version(TEST_DEVICE) == 4):
+        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME, device_protocol='ssh',
+                                    server_ip=MAV6_IPV4, transfer_protocol='ftp')
+    else:
+        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME, device_protocol='ssh',
+                                    server_ip=MAV6_IPV6, transfer_protocol='ftp')
+
 
     # Check to see if file transfer was successful and print message
     if (file_on_flash(device, filename='test.txt')):
