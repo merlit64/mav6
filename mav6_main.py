@@ -3,6 +3,7 @@
 from multiprocessing import Process, Queue
 from time import sleep, ctime
 import os
+import shutil
 import ssl
 import socket
 
@@ -108,6 +109,7 @@ def del_from_flash(device, filename='test.txt'):
     else:
         return True
 
+
 def file_on_mav(filename=''):
     # Return True if file exists on mav6 box, False if not
     # filename - name of the file to look for
@@ -173,8 +175,6 @@ def http_test(ip= '', verify = True):
     else:
         print(colored((http_print + " Test Failed (Status code " + code + ")\n"), "red"))
 
-
-# SNMP Test Functions
     
 def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = "v2", action = "read", 
               community="public", userName=None, authKey=None, privKey=None,  
@@ -489,6 +489,32 @@ def filetransfer_client_download(device_hostname='', device_protocol='ssh',
         exit()
 
  
+def ca_buildca(server_ip=''):
+    # Delete old CA
+    if (os.path.isdir('mav6-certs')):
+        shutil.rmtree('mav6-certs')
+
+    # Create the rootCA.key and rootCA.crt
+    os.mkdir('mav6-certs')
+    os.chdir('mav6-certs')
+    command = 'openssl req -x509 -sha256 -days 3650 -nodes  -newkey rsa:4096 -subj ' + \
+                '"/CN=mav6b.ciscofederal.com/C=US/L=Richfield/ST=Ohio"  -keyout rootCA.key -out rootCA.crt'
+    os.system(command)
+
+    #Build the server CSR
+    os.system('openssl genrsa -out server.key 4096')
+    os.system('echo ' + SERVER_CSR_CONF + ' >> server_csr.conf')
+    sleep(2)
+    os.system('openssl req -new -key server.key -out server.csr -config server_csr.conf')
+    # Create the server certificate
+    os.system('echo ' + SERVER_CERT_CONF + ' >> server_cert.conf')
+    sleep(2)
+    command = 'openssl req -new -in server.csr -CA rootCA.crt -CAkey rootCA.key _CAcreateserial ' + \
+                '-out server.crt -days 3650 -sha256 -extfile server_cert.conf'
+    os.system(command)
+
+
+
 ######## MAIN PROGRAM ########
 
 # Note: ALL comments are made from the perspective of the test device
