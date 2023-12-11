@@ -503,14 +503,18 @@ def ca_buildca(server_ip=''):
 
     #Build the server CSR
     os.system('openssl genrsa -out server.key 4096')
-    os.system('echo ' + SERVER_CSR_CONF + ' >> server_csr.conf')
+    with open('server_csr.conf', 'w+') as f:
+        f.writelines(SERVER_CSR_CONF)
     sleep(2)
     os.system('openssl req -new -key server.key -out server.csr -config server_csr.conf')
     # Create the server certificate
-    os.system('echo ' + SERVER_CERT_CONF + ' >> server_cert.conf')
+    with open('server_cert.conf', 'w+') as f:
+        f.writelines(SERVER_CERT_CONF)
+
     sleep(2)
-    command = 'openssl req -new -in server.csr -CA rootCA.crt -CAkey rootCA.key _CAcreateserial ' + \
-                '-out server.crt -days 3650 -sha256 -extfile server_cert.conf'
+    command = 'openssl x509 -req -in server.csr -CA rootCA.crt -CAkey rootCA.key ' + \
+                '-CAcreateserial -out server.crt -days 3650 -sha256 ' + \
+                '-extfile server_cert.conf'
     os.system(command)
 
 
@@ -522,6 +526,7 @@ def ca_buildca(server_ip=''):
 
 
 ### SERVER TESTS ###
+#ca_buildca('10.112.1.106')
 
 # Ping Server Test
 if PING_SERVER:
