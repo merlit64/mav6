@@ -517,12 +517,37 @@ def ca_buildca(server_ip=''):
                 '-extfile server_cert.conf'
     os.system(command)
 
+    #get fingerprint of rootCA.crt
+    command = 'openssl z509 in rootCA.crt -noout -fingerprint >> fingerprint.txt'
+    os.system(command)
+
+def rtr_add_trustpoint(device='', fingerprint=''):
+    with open('fingerprint.txt') as fileptr:
+        fingerprint = fileptr.read()
+    print('fingerprint is: \n')
+    print(fingerprint)
+    equal_position = fingerprint.rfind('=')
+    fingerprint=fingerprint[equal_position:]
+    print(fingerprint)
+    fingerprint = fingerprint.replace(':', '')
+    print(fingerprint)
+
+    device.configure ('crypto pki trustpoint MAV6-TP\n' + \
+                        'enrollment terminal\n' + \
+                        'revocation-check none \n' + \
+                        'fingerprint  ' + fingerprint + '\n'
+                        )
 
 
 ######## MAIN PROGRAM ########
 
 # Note: ALL comments are made from the perspective of the test device
 # I.E. Telnet server test means the Test device is acting as the TFTP Server
+
+os.chdir('mav6-certs')
+#get fingerprint of rootCA.crt
+command = 'openssl z509 in rootCA.crt -noout -fingerprint >> fingerprint.txt'
+os.system(command)
 
 
 ### SERVER TESTS ###
