@@ -32,3 +32,46 @@ USE_LOCAL_SCP_SERVER = True
 # Below is used for FTP and TFTP
 FILE_TRANSFER_SERVER_PATH = '/home/mav6b/Documents'
 PYATS_TESTBED = 'pyATS/testbed.yaml'
+
+
+# Files to Build
+SERVER_CSR_CONF = '''
+[ req ]
+default_bits = 4096
+prompt = no
+default_md = sha256
+req_extensions = req_ext
+distinguished_name = dn
+
+[ dn ]
+C = US
+ST = Ohio
+L = Richfield
+O = Cisco
+OU = Federal
+CN = mav6b.ciscofederal.com
+
+[ req_ext ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = mav6b
+DNS.2 = mav6
+DNS.3 = mav6.ciscofederal.com
+IP.1 = 10.112.1.106
+IP.2 = 2005:1117:1:1:2439:3e34:e7a:b534
+
+'''
+
+SERVER_CERT_CONF = '''
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = mav6b.ciscofederal.com
+DNS.2 = *.ciscofederal.com
+IP.1 = 10.112.1.106
+IP.2 = 2005:1117:1:1:2439:3e34:e7a:b534
+'''
