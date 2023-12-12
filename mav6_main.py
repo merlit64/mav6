@@ -527,7 +527,7 @@ def rtr_add_trustpoint(device='', fingerprint=''):
     print('fingerprint is: \n')
     print(fingerprint)
     equal_position = fingerprint.rfind('=')
-    fingerprint=fingerprint[equal_position:]
+    fingerprint=fingerprint[equal_position+1:]
     print(fingerprint)
     fingerprint = fingerprint.replace(':', '')
     print(fingerprint)
@@ -538,6 +538,14 @@ def rtr_add_trustpoint(device='', fingerprint=''):
                         'fingerprint  ' + fingerprint + '\n'
                         )
 
+def rtr_authenticate_rootca(device=''):
+    with open('rootCA.crt') as fileptr:
+        rootCA = fileptr.read()
+    device.configure ('crypto pki authenticate MAV6-TP\n' + \
+                        rootCA + '\n\n' 
+                        )
+    sleep(2)
+   
 
 ######## MAIN PROGRAM ########
 
