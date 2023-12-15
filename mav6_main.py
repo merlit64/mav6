@@ -6,6 +6,7 @@ import os
 import shutil
 import ssl
 import socket
+import certifi
 
 ### LOCAL FILES ###
 from secrets_1 import *
@@ -40,6 +41,9 @@ import paramiko
 from pyftpdlib.handlers import FTPHandler
 from pyftpdlib.servers import FTPServer
 from pyftpdlib.authorizers import DummyAuthorizer
+
+# Certificate functions
+from OpenSSL import SSL, crypto
 
 ######## FUNCTIONS #######
 def ip_version(ip):
@@ -433,14 +437,19 @@ def start_server(transfer_protocol='tftp', ip=MAV6_IPV4):
 
     elif (transfer_protocol == 'https'):        
         print('Starting https server...')
+        context = ssl.SSLContext()
+        context.verify_mode = ssl.CERT_NONE
+        context.load_verify_locations('keys_and_certs/rootCA.crt')
+        context.load_cert_chain(certfile='keys_and_certs/server.crt', 
+                                keyfile='keys_and_certs/server.key')
+
         if (ip_version(ip) == 6):
             server_socket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         else:
             server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
-        wrapped_socket = ssl.wrap_socket(server_socket, certfile='keys-certs/server.crt', 
-                                         keyfile='keys-certs/server.key', server_side=True)
-        wrapped_socket.bind((ip, 443))
+        wrapped_socket = context.wrap_socket(server_socket, server_side=True)
+        wrapped_socket.bind((ip, 14443))
         wrapped_socket.listen(1)
         while True:
             client_connection, client_address = wrapped_socket.accept()
@@ -491,27 +500,30 @@ def filetransfer_client_download(device_hostname='', device_protocol='ssh',
 
 def ca_create_directory():
     # Delete old CA
-    if (os.path.isdir('mav6-certs')):
-        shutil.rmtree('mav6-certs')
+    if (os.path.isdir('keys_and_certs')):
+        shutil.rmtree('keys_and_certs')
 
     # Create the rootCA.key and rootCA.crt
-    os.mkdir('mav6-certs')
+    os.mkdir('keys_and_certs')
     
 
 def ca_buildca_cert():
-    os.chdir('mav6-certs')
+    os.chdir('keys_and_certs')
     command = 'openssl req -x509 -sha256 -days 3650 -nodes  -newkey rsa:4096 -subj ' + \
-                '"/CN=mav6b.ciscofederal.com/C=US/L=Richfield/ST=Ohio"  -keyout rootCA.key -out rootCA.crt'
+                '"/CN=mav6b.ciscofederal.com/C=US/L=Richfield/ST=Ohio"  ' + \
+                '-keyout rootCA.key -out rootCA.crt'
     os.system(command)
+    os.chdir('..')
+
 
 def ca_buildca(server_ip=''):
     # Delete old CA
-    if (os.path.isdir('mav6-certs')):
-        shutil.rmtree('mav6-certs')
+    if (os.path.isdir('keys_and_certs')):
+        shutil.rmtree('keys_and_certs')
 
     # Create the rootCA.key and rootCA.crt
-    os.mkdir('mav6-certs')
-    os.chdir('mav6-certs')
+    os.mkdir('keys_and_certs')
+    os.chdir('keys_and_certs')
     command = 'openssl req -x509 -sha256 -days 3650 -nodes  -newkey rsa:4096 -subj ' + \
                 '"/CN=mav6b.ciscofederal.com/C=US/L=Richfield/ST=Ohio"  -keyout rootCA.key -out rootCA.crt'
     os.system(command)
@@ -532,9 +544,23 @@ def ca_buildca(server_ip=''):
                 '-extfile server_cert.conf'
     os.system(command)
 
-    #get fingerprint of rootCA.crt
-    command = 'openssl z509 in rootCA.crt -noout -fingerprint >> fingerprint.txt'
+    #get fingerprint of server.crt
+    command = 'openssl x509 -in server.crt -noout -fingerprint >> fingerprint.txt'
     os.system(command)
+    with open('fingerprint.txt') as fileptr:
+        fingerprint = fileptr.read()
+    print('fingerprint is: \n')
+    print(fingerprint)
+    equal_position = fingerprint.rfind('=')
+    fingerprint=fingerprint[equal_position+1:]
+    print(fingerprint)
+    fingerprint = fingerprint.replace(':', '')
+    print(fingerprint)
+    sleep(1)
+    with open('fingerprint.txt', 'w+') as f:
+        f.writelines(fingerprint)
+    os.chdir('..')
+
 
 def ca_create_key_and_cert(directory = '', key_cert_name = '', issuer='self', bits=4096, hash='sha256'):
     # if issuer = 'self' and key_cert_name = 'rootCA' this function will create the directory and build rootCA key and cert
@@ -558,7 +584,10 @@ def ca_create_key_and_cert(directory = '', key_cert_name = '', issuer='self', bi
     cert.get_subject().L = 'Richfield'
     cert.get_subject().O = 'Cisco'
     cert.get_subject().OU = 'Federal'
-    cert.get_subject().CN = 'mav6.ciscofederal.com'
+    if issuer == 'self':
+        cert.get_subject().CN = 'mav6.ciscofederal.com'
+    else:
+        cert.get_subject().CN = 'server.ciscofederal.com'
     cert.get_subject().emailAddress = 'pmerlitt@cisco.com'
 
     cert.set_serial_number(1000)
@@ -574,7 +603,6 @@ def ca_create_key_and_cert(directory = '', key_cert_name = '', issuer='self', bi
     else:
         ca_cert = crypto.load_certificate(crypto.FILETYPE_PEM, 
                                           open(os.path.join(PATH, CA_CERT_FILE)).read())
-
         ca_key = crypto.load_privatekey(crypto.FILETYPE_PEM, 
                                         open(os.path.join(PATH, CA_KEY_FILE)).read())
 
@@ -623,6 +651,7 @@ def rtr_add_trustpoint(device='', fingerprint=''):
                         'fingerprint  ' + fingerprint + '\n'
                         )
 
+
 def rtr_authenticate_rootca(device=''):
     with open('rootCA.crt') as fileptr:
         rootCA = fileptr.read()
@@ -637,10 +666,10 @@ def rtr_authenticate_rootca(device=''):
 # Note: ALL comments are made from the perspective of the test device
 # I.E. Telnet server test means the Test device is acting as the TFTP Server
 
-os.chdir('mav6-certs')
+#os.chdir('keys_and_certs')
 #get fingerprint of rootCA.crt
-command = 'openssl z509 in rootCA.crt -noout -fingerprint >> fingerprint.txt'
-os.system(command)
+#command = 'openssl x509 in rootCA.crt -noout -fingerprint >> fingerprint.txt'
+#os.system(command)
 
 
 ### SERVER TESTS ###
@@ -868,9 +897,9 @@ if HTTPS_CLIENT:
     # USE OS COMMANDS TO CREATE DIR, OPENSSL ROOTCA.KEY ROOTCA.CRT, SERVER.KEY, SERVER.CSR
     # SERVER.CRT, 
     # Create CA on Mav6 and create a signed cert for Mav6 https server
-    ca_create_key_and_cert(directory=CA_DIRECTORY, key_cert_name=CA_CERT_NAME, issuer='self')
-    ca_create_key_and_cert(directory=CA_DIRECTORY, key_cert_name='server', issuer=CA_CERT_NAME)
-
+    #ca_create_key_and_cert(directory=CA_DIRECTORY, key_cert_name=CA_CERT_NAME, issuer='self')
+    #ca_create_key_and_cert(directory=CA_DIRECTORY, key_cert_name='server', issuer=CA_CERT_NAME)
+    ca_buildca(server_ip='10.112.1.106')
 
     # Start Server
     print('starting https server process')
@@ -879,6 +908,10 @@ if HTTPS_CLIENT:
                                        args=('https',MAV6_IPV4,))
         https_server_process.start()
         sleep(5)
+        # USE PYATS TO CREATE THE KEYS, TP, AUTHENTICATE THE ROOTCA.CRT, CREATE ROUTER CSR
+        # USE CA TO SIGN THE CSR
+        # USE PYATS TO INSTALL THE ROUTER CERT
+
         filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME,  device_protocol='ssh',
                                      server_ip=MAV6_IPV4, transfer_protocol='https')
     else:
@@ -886,12 +919,12 @@ if HTTPS_CLIENT:
                                        args=('https',MAV6_IPV6,))
         https_server_process.start()
         sleep(5)
+        # USE PYATS TO CREATE THE KEYS, TP, AUTHENTICATE THE ROOTCA.CRT, CREATE ROUTER CSR
+        # USE CA TO SIGN THE CSR
+        # USE PYATS TO INSTALL THE ROUTER CERT
         filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME,  device_protocol='ssh',
                                      server_ip=MAV6_IPV6, transfer_protocol='https')
 
-    # USE PYATS TO CREATE THE KEYS, TP, AUTHENTICATE THE ROOTCA.CRT, CREATE ROUTER CSR
-    # USE OS COMMANES TO SIGN THE CSR
-    # USE PYATS TO INSTALL THE ROUTER CERT
 
     # Check to see if file transfer was successful and print message
     if (file_on_flash(device, filename='test.txt')):

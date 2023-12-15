@@ -17,10 +17,12 @@ PING_CLIENT = True
 TELNET_CLIENT = False
 SSH_CLIENT = False
 SCP_CLIENT = False
-TFTP_CLIENT = False
-FTP_CLIENT = False
+TFTP_CLIENT = True
+FTP_CLIENT = True
 HTTP_CLIENT = True
 HTTPS_CLIENT = False
+# If you are using mav6's http server you must build a key file and cert
+# 
 SNMPV2_TRAP = False
 SNMPV3_TRAP = False
 
@@ -32,7 +34,7 @@ USE_LOCAL_SCP_SERVER = True
 # Below is used for FTP and TFTP
 FILE_TRANSFER_SERVER_PATH = '/home/mav6b/Documents'
 PYATS_TESTBED = 'pyATS/testbed.yaml'
-
+LOCAL_DEVICE = '10.112.1.106'
 
 # Files to Build
 SERVER_CSR_CONF = '''
@@ -49,17 +51,17 @@ ST = Ohio
 L = Richfield
 O = Cisco
 OU = Federal
-CN = mav6b.ciscofederal.com
+CN = mav6.ciscofederal.com
 
 [ req_ext ]
 subjectAltName = @alt_names
 
 [ alt_names ]
-DNS.1 = mav6b
-DNS.2 = mav6
-DNS.3 = mav6.ciscofederal.com
+DNS.1 = mav6
+DNS.2 = mav6b
+DNS.3 = mav6b.ciscofederal.com
 IP.1 = 10.112.1.106
-IP.2 = 2005:1117:1:1:2439:3e34:e7a:b534
+IP.2 = 2005:1117:1:1:5d09:21bf:60ea:42bb
 
 '''
 
@@ -70,8 +72,8 @@ keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
 subjectAltName = @alt_names
 
 [alt_names]
-DNS.1 = mav6b.ciscofederal.com
+DNS.1 = mav6.ciscofederal.com
 DNS.2 = *.ciscofederal.com
 IP.1 = 10.112.1.106
-IP.2 = 2005:1117:1:1:2439:3e34:e7a:b534
+IP.2 = 2005:1117:1:1:5d09:21bf:60ea:42bb
 '''
