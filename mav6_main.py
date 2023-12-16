@@ -452,12 +452,18 @@ def start_server(transfer_protocol='tftp', ip=MAV6_IPV4):
         wrapped_socket.bind((ip, 14443))
         wrapped_socket.listen(1)
         while True:
-            client_connection, client_address = wrapped_socket.accept()
-            request = client_connection.recv(1024).decode()
-            print(request)
-            response = "HTTP/1.0 200 OK\n\n Mav6 File Transfer completed successfully!"
-            client_connection.sendall(response.encode())
-            client_connection.close()
+            try:
+                client_connection, client_address = wrapped_socket.accept()
+                request = client_connection.recv(1024).decode()
+                print(request)
+                response = "HTTP/1.0 200 OK\n\n Mav6 File Transfer completed successfully!"
+                client_connection.sendall(response.encode())
+                client_connection.close()
+            except:
+                # An unknown cert by the browser trips an error and will end the server process
+                # this pass lets the loop continue, and thefore the https server continue
+                # despite the self-signed or unknown cert error
+                pass
     else:
         print('No embedded server for ' + transfer_protocol)
 
@@ -507,15 +513,6 @@ def ca_create_directory():
     os.mkdir('keys_and_certs')
     
 
-def ca_buildca_cert():
-    os.chdir('keys_and_certs')
-    command = 'openssl req -x509 -sha256 -days 3650 -nodes  -newkey rsa:4096 -subj ' + \
-                '"/CN=mav6b.ciscofederal.com/C=US/L=Richfield/ST=Ohio"  ' + \
-                '-keyout rootCA.key -out rootCA.crt'
-    os.system(command)
-    os.chdir('..')
-
-
 def ca_buildca(server_ip=''):
     # Delete old CA
     if (os.path.isdir('keys_and_certs')):
@@ -560,78 +557,6 @@ def ca_buildca(server_ip=''):
     with open('fingerprint.txt', 'w+') as f:
         f.writelines(fingerprint)
     os.chdir('..')
-
-
-def ca_create_key_and_cert(directory = '', key_cert_name = '', issuer='self', bits=4096, hash='sha256'):
-    # if issuer = 'self' and key_cert_name = 'rootCA' this function will create the directory and build rootCA key and cert
-    # if the issuer is self and key_cert_name is something other than 'rootCA', we will create a key and a self-signed cert
-    # or else this function will create a cert and key for key_cert_name with rootCA as the issuer
-    PATH = './' + directory
-    PRIV_KEY_FILE = key_cert_name + '.key'
-    PUB_KEY_FILE = key_cert_name + '-pub.key'
-    CERT_FILE = key_cert_name + '.crt'
-    CA_KEY_FILE = issuer + '.key'
-    CA_CERT_FILE = issuer + '.crt'
-
-
-    k = crypto.PKey()
-    k.generate_key(crypto.TYPE_RSA, bits)
-
-    cert = crypto.X509()
-
-    cert.get_subject().C = 'US'
-    cert.get_subject().ST = 'Ohio'
-    cert.get_subject().L = 'Richfield'
-    cert.get_subject().O = 'Cisco'
-    cert.get_subject().OU = 'Federal'
-    if issuer == 'self':
-        cert.get_subject().CN = 'mav6.ciscofederal.com'
-    else:
-        cert.get_subject().CN = 'server.ciscofederal.com'
-    cert.get_subject().emailAddress = 'pmerlitt@cisco.com'
-
-    cert.set_serial_number(1000)
-    cert.gmtime_adj_notBefore(0)
-    cert.gmtime_adj_notAfter(5 * 365 * 24 * 60 * 60)
-
-    # Issuer could be self or a CA
-    if(issuer == 'self'):
-        cert.set_issuer(cert.get_subject())
-        cert.set_pubkey(k)
-        # Signed with self key or CA key
-        cert.sign(k, hash)
-    else:
-        ca_cert = crypto.load_certificate(crypto.FILETYPE_PEM, 
-                                          open(os.path.join(PATH, CA_CERT_FILE)).read())
-        ca_key = crypto.load_privatekey(crypto.FILETYPE_PEM, 
-                                        open(os.path.join(PATH, CA_KEY_FILE)).read())
-
-        cert.set_issuer(ca_cert.get_subject())
-        cert.set_pubkey(k)
-        # Signed with self key or CA key
-        cert.sign(ca_key, hash)
-
-
-    cert_fq_filename = os.path.join(PATH, CERT_FILE)
-    priv_key_fq_filename = os.path.join(PATH, PRIV_KEY_FILE)
-    pub_key_fq_filename = os.path.join(PATH, PUB_KEY_FILE)
-
-    if os.path.exists(directory) and issuer=='self' and key_cert_name=='rootCA':
-        shutil.rmtree(directory)
-        sleep(2)
-        os.mkdir(directory)
-    elif not os.path.exists(directory):
-        os.mkdir(directory)
-    else: 
-        pass    
-    with open(cert_fq_filename, 'wb') as f:
-        f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
-
-    with open(priv_key_fq_filename, 'wb') as f:
-        f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
-
-    with open(pub_key_fq_filename, 'wb') as f:
-        f.write(crypto.dump_publickey(crypto.FILETYPE_PEM, k))
 
 
 def rtr_add_trustpoint(device='', fingerprint=''):
