@@ -514,7 +514,10 @@ def ca_create_directory():
     
 
 def ca_buildca(server_ip=''):
-    # Delete old CA
+    # This function builds a CA server for the embedded https server certificates using openssl command line
+    # FIrst it will create the rootCA.key and rootCA.crt, then use them to sign server.crt for the https server
+
+    # Delete the old CA directory and files in it, if they exist
     if (os.path.isdir('keys_and_certs')):
         shutil.rmtree('keys_and_certs')
 
@@ -525,13 +528,13 @@ def ca_buildca(server_ip=''):
                 '"/CN=mav6b.ciscofederal.com/C=US/L=Richfield/ST=Ohio"  -keyout rootCA.key -out rootCA.crt'
     os.system(command)
 
-    #Build the server CSR
+    #Build the server CSR conf file and then the server CSR
     os.system('openssl genrsa -out server.key 4096')
     with open('server_csr.conf', 'w+') as f:
         f.writelines(SERVER_CSR_CONF)
     sleep(2)
     os.system('openssl req -new -key server.key -out server.csr -config server_csr.conf')
-    # Create the server certificate
+    # Create the server certificate conf file, then the server certificate
     with open('server_cert.conf', 'w+') as f:
         f.writelines(SERVER_CERT_CONF)
 
@@ -541,34 +544,26 @@ def ca_buildca(server_ip=''):
                 '-extfile server_cert.conf'
     os.system(command)
 
-    #get fingerprint of server.crt
-    command = 'openssl x509 -in server.crt -noout -fingerprint >> fingerprint.txt'
+    # get fingerprint of server.crt
+    # SHOULD THIS BE THE FINGERPRINT OF THE SERVER.CRT or ROOTCA.CRT?
+    command = 'openssl x509 -in rootCA.crt -noout -fingerprint >> fingerprint.txt'
     os.system(command)
     with open('fingerprint.txt') as fileptr:
         fingerprint = fileptr.read()
-    print('fingerprint is: \n')
-    print(fingerprint)
     equal_position = fingerprint.rfind('=')
     fingerprint=fingerprint[equal_position+1:]
-    print(fingerprint)
     fingerprint = fingerprint.replace(':', '')
-    print(fingerprint)
     sleep(1)
+
+    # Save the fingerprint to a file
     with open('fingerprint.txt', 'w+') as f:
         f.writelines(fingerprint)
     os.chdir('..')
 
 
-def rtr_add_trustpoint(device='', fingerprint=''):
-    with open('fingerprint.txt') as fileptr:
+def rtr_add_trustpoint(device=''):
+    with open('keys_and_certs/fingerprint.txt') as fileptr:
         fingerprint = fileptr.read()
-    print('fingerprint is: \n')
-    print(fingerprint)
-    equal_position = fingerprint.rfind('=')
-    fingerprint=fingerprint[equal_position+1:]
-    print(fingerprint)
-    fingerprint = fingerprint.replace(':', '')
-    print(fingerprint)
 
     device.configure ('crypto pki trustpoint MAV6-TP\n' + \
                         'enrollment terminal\n' + \
@@ -578,7 +573,7 @@ def rtr_add_trustpoint(device='', fingerprint=''):
 
 
 def rtr_authenticate_rootca(device=''):
-    with open('rootCA.crt') as fileptr:
+    with open('keys_and_certs/rootCA.crt') as fileptr:
         rootCA = fileptr.read()
     device.configure ('crypto pki authenticate MAV6-TP\n' + \
                         rootCA + '\n\n' 
@@ -826,6 +821,7 @@ if HTTPS_CLIENT:
     #ca_create_key_and_cert(directory=CA_DIRECTORY, key_cert_name='server', issuer=CA_CERT_NAME)
     ca_buildca(server_ip='10.112.1.106')
 
+
     # Start Server
     print('starting https server process')
     if (ip_version(TEST_DEVICE) == 4):
@@ -836,6 +832,10 @@ if HTTPS_CLIENT:
         # USE PYATS TO CREATE THE KEYS, TP, AUTHENTICATE THE ROOTCA.CRT, CREATE ROUTER CSR
         # USE CA TO SIGN THE CSR
         # USE PYATS TO INSTALL THE ROUTER CERT
+
+
+        rtr_add_trustpoint(device)
+        rtr_authenticate_rootca(device)
 
         filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME,  device_protocol='ssh',
                                      server_ip=MAV6_IPV4, transfer_protocol='https')
