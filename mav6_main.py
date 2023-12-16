@@ -575,9 +575,12 @@ def rtr_add_trustpoint(device=''):
 def rtr_authenticate_rootca(device=''):
     with open('keys_and_certs/rootCA.crt') as fileptr:
         rootCA = fileptr.read()
+    '''
     device.configure ('crypto pki authenticate MAV6-TP\n' + \
                         rootCA + '\n\n' 
                         )
+    '''
+    device.api.configure_pki_authenticate_certificate(certificate=rootCA)
     sleep(2)
    
 
