@@ -580,9 +580,51 @@ def rtr_authenticate_rootca(device=''):
                         rootCA + '\n\n' 
                         )
     '''
-    device.api.configure_pki_authenticate_certificate(certificate=rootCA)
+    # TAKE OUT BEGIN AND END LINES FIRST?
+    rootCA = rootCA.replace('-----BEGIN CERTIFICATE-----\n', '')
+    rootCA = rootCA.replace('-----END CERTIFICATE-----\n', '\n\n')    
+    # dont know why it fails the first time, suceeds the 2nd time
+    try:
+        device.api.configure_pki_authenticate_certificate(certificate=rootCA, 
+                                                          label_name='MAV6-TP')
+    except:
+        sleep(4)
+        device.api.configure_pki_authenticate_certificate(certificate=rootCA, 
+                                                          label_name='MAV6-TP')
+
     sleep(2)
-   
+
+
+def rtr_build_csr(device=''):
+        csr = device.api.configure_pki_enroll_certificate(label_name='MAV6-TP')
+        substring_begin = "Certificate Request follows:\r\n\r\n"
+        substring_end = '\r\n\r\n---End'
+        csr = csr[(csr.find(substring_begin)+len(substring_begin)): csr.find(substring_end)]
+        csr = '-----BEGIN CERTIFICATE REQUEST-----\n' + csr + \
+                '\n-----END CERTIFICATE REQUEST-----\n'
+        print(csr)
+        return csr
+
+
+def ca_sign_csr(csr='', hash='sha256'):
+    ca_key = crypto.load_privatekey(crypto.FILETYPE_PEM, open('./keys_and_certs/rootCA.key').read())
+    ca_cert = crypto.load_certificate(crypto.FILETYPE_PEM, open('./keys_and_certs/rootCA.crt').read())
+    csr_obj = crypto.load_certificate_request(crypto.FILETYPE_PEM, csr)
+
+    # Move info from CSR to new Certificate
+    new_cert = crypto.X509()
+    new_cert.set_issuer(ca_cert.get_subject())
+    new_cert.set_pubkey(csr_obj.get_pubkey())
+    new_cert.set_serial_number(1111)
+    new_cert.gmtime_adj_notBefore(0)
+    new_cert.gmtime_adj_notAfter(60*60*24*365*5)
+    new_cert.sign(ca_key, 'sha256')
+
+    return new_cert
+
+def rtr_install_cert(device='', cert=''):
+    device.api.crypto_pki_import(cert, label_name='MAV6-TP')
+
 
 ######## MAIN PROGRAM ########
 
@@ -839,6 +881,11 @@ if HTTPS_CLIENT:
 
         rtr_add_trustpoint(device)
         rtr_authenticate_rootca(device)
+        csr = rtr_build_csr(device)
+        rtr_cert = ca_sign_csr(csr)
+        rtr_install_cert(device, rtr_cert)
+
+        # SIGN THE CSR WITH THE CA
 
         filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME,  device_protocol='ssh',
                                      server_ip=MAV6_IPV4, transfer_protocol='https')
