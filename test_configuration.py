@@ -36,12 +36,15 @@ USE_LOCAL_SCP_SERVER = True
 FILE_TRANSFER_SERVER_PATH = '/home/mav6b/Documents'
 PYATS_TESTBED = 'pyATS/testbed.yaml'
 LOCAL_DEVICE = '10.112.1.106'
+CA_DIRECTORY = 'keys_and_certs'
+CA_CERT_NAME = 'rootCA'
 
 # Files to Build
 SERVER_CSR_CONF = '''
 [ req ]
 default_bits = 4096
 prompt = no
+encrypt_key = no
 default_md = sha256
 req_extensions = req_ext
 distinguished_name = dn
@@ -75,6 +78,10 @@ subjectAltName = @alt_names
 [alt_names]
 DNS.1 = mav6.ciscofederal.com
 DNS.2 = *.ciscofederal.com
+DNS.3 = mav6b
+DNS.4 = mav6b.ciscofederal.com
+DNS.5 = server.ciscofederal.com
+DNS.6 = server
 IP.1 = 10.112.1.106
 IP.2 = 2005:1117:1:1:5d09:21bf:60ea:42bb
 '''
