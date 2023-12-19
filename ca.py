@@ -11,48 +11,25 @@ from genie.libs.sdk.apis.iosxe.ntp.configure import *
 
 
 
-def ca_create_directory():
+def ca_create_directory(directory_name = ''):
     # Delete old CA
-    if (os.path.isdir('keys_and_certs')):
-        shutil.rmtree('keys_and_certs')
+    if (os.path.isdir(directory_name)):
+        shutil.rmtree(directory_name)
 
     # Create the rootCA.key and rootCA.crt
-    os.mkdir('keys_and_certs')
+    os.mkdir(directory_name)
     
 
-def ca_buildca(server_ip=''):
+def ca_build_ca(server_ip='', directory_name=''):
     # This function builds a CA server for the embedded https server certificates using openssl command line
     # FIrst it will create the rootCA.key and rootCA.crt, then use them to sign server.crt for the https server
 
-    # Delete the old CA directory and files in it, if they exist
-    if (os.path.isdir('keys_and_certs')):
-        shutil.rmtree('keys_and_certs')
-
-    # Create the rootCA.key and rootCA.crt
-    os.mkdir('keys_and_certs')
-    os.chdir('keys_and_certs')
+    os.chdir(directory_name)
     command = 'openssl req -x509 -sha256 -days 3650 -nodes  -newkey rsa:4096 -subj ' + \
                 '"/CN=mav6b.ciscofederal.com/C=US/L=Richfield/ST=Ohio"  -keyout rootCA.key -out rootCA.crt'
     os.system(command)
 
-    #Build the server CSR conf file and then the server CSR
-    os.system('openssl genrsa -out server.key 4096')
-    with open('server_csr.conf', 'w+') as f:
-        f.writelines(SERVER_CSR_CONF)
-    sleep(2)
-    os.system('openssl req -new -key server.key -out server.csr -config server_csr.conf')
-    # Create the server certificate conf file, then the server certificate
-    with open('server_cert.conf', 'w+') as f:
-        f.writelines(SERVER_CERT_CONF)
-
-    sleep(2)
-    command = 'openssl x509 -req -in server.csr -CA rootCA.crt -CAkey rootCA.key ' + \
-                '-CAcreateserial -out server.crt -days 3650 -sha256 ' + \
-                '-extfile server_cert.conf'
-    os.system(command)
-
-    # get fingerprint of server.crt
-    # SHOULD THIS BE THE FINGERPRINT OF THE SERVER.CRT or ROOTCA.CRT?
+    # get fingerprint of rootCA.crt
     command = 'openssl x509 -in rootCA.crt -noout -fingerprint >> fingerprint.txt'
     os.system(command)
     with open('fingerprint.txt') as fileptr:
@@ -68,19 +45,51 @@ def ca_buildca(server_ip=''):
     os.chdir('..')
 
 
-def rtr_add_trustpoint(device=''):
-    with open('keys_and_certs/fingerprint.txt') as fileptr:
+def ca_build_server(server_ip='', csr_conf='', cert_conf='', server_name='', directory_name=''):
+    #Build the server CSR conf file and then the server CSR
+    os.chdir(directory_name)
+    command = 'openssl genrsa -out ' + server_name + '.key 4096'
+    os.system(command)
+
+    filename = server_name + '_csr.conf'
+    with open(filename, 'w+') as f:
+        f.writelines(csr_conf)
+    sleep(2)
+
+    command = 'openssl req -new -key ' + server_name + '.key -out ' + server_name + \
+                '.csr -config ' + server_name + '_csr.conf'
+    os.system(command)
+    
+    # Create the server certificate conf file, then the server certificate
+    filename = server_name + '_cert.conf'
+    with open(filename, 'w+') as f:
+        f.writelines(cert_conf)
+
+    sleep(2)
+    command = 'openssl x509 -req -in ' + server_name + '.csr -CA rootCA.crt -CAkey rootCA.key ' + \
+                '-CAcreateserial -out ' + server_name + '.crt -days 3650 -sha256 ' + \
+                '-extfile ' + filename
+    os.system(command)
+
+    os.chdir('..')
+
+
+def rtr_add_trustpoint(device='', directory_name=''):
+    filename = os.path.join(directory_name, 'fingerprint.txt')
+    with open(filename) as fileptr:
         fingerprint = fileptr.read()
 
     device.configure ('crypto pki trustpoint MAV6-TP\n' + \
                         'enrollment terminal\n' + \
+                        'usage ssl-client\n' + \
                         'revocation-check none \n' + \
                         'fingerprint  ' + fingerprint + '\n'
                         )
 
 
-def rtr_authenticate_rootca(device=''):
-    with open('keys_and_certs/rootCA.crt') as fileptr:
+def rtr_authenticate_rootca(device='', directory_name=''):
+    filename = os.path.join(directory_name, 'rootCA.crt')
+    with open(filename) as fileptr:
         rootCA = fileptr.read()
     '''
     device.configure ('crypto pki authenticate MAV6-TP\n' + \
@@ -103,17 +112,19 @@ def rtr_authenticate_rootca(device=''):
 
 
 def rtr_build_csr(device=''):
-        csr = device.api.configure_pki_enroll_certificate(label_name='MAV6-TP')
-        substring_begin = "Certificate Request follows:\r\n\r\n"
-        substring_end = '\r\n\r\n---End'
-        csr = csr[(csr.find(substring_begin)+len(substring_begin)): csr.find(substring_end)]
-        csr = '-----BEGIN CERTIFICATE REQUEST-----\n' + csr + \
-                '\n-----END CERTIFICATE REQUEST-----\n'
-        print(csr)
-        return csr
+    # NOT BEING USED RIGHT NOW    
+    csr = device.api.configure_pki_enroll_certificate(label_name='MAV6-TP')
+    substring_begin = "Certificate Request follows:\r\n\r\n"
+    substring_end = '\r\n\r\n---End'
+    csr = csr[(csr.find(substring_begin)+len(substring_begin)): csr.find(substring_end)]
+    csr = '-----BEGIN CERTIFICATE REQUEST-----\n' + csr + \
+            '\n-----END CERTIFICATE REQUEST-----\n'
+    print(csr)
+    return csr
 
 
 def ca_sign_csr(csr='', hash='sha256'):
+    # NOT BEING USED RIGHT NOW    
     ca_key = crypto.load_privatekey(crypto.FILETYPE_PEM, open('./keys_and_certs/rootCA.key').read())
     ca_cert = crypto.load_certificate(crypto.FILETYPE_PEM, open('./keys_and_certs/rootCA.crt').read())
     csr_obj = crypto.load_certificate_request(crypto.FILETYPE_PEM, csr)
@@ -129,7 +140,28 @@ def ca_sign_csr(csr='', hash='sha256'):
 
     return new_cert
 
+def ca_sign_csr_cli(csr='', hash='sha256', test_device_cert_conf=''):
+    # NOT BEING USED RIGHT NOW    
+    os.chdir('keys_and_certs')
+    with open('mgmt.csr', 'w+') as f:
+        f.writelines(csr)
+    with open('mgmt_cert.conf', 'w+') as f2:
+        f2.writelines(test_device_cert_conf)
+    sleep(2)
+
+    command = 'openssl x509 -req -in mgmt.csr -CA rootCA.crt -CAkey rootCA.key ' + \
+                '-CAcreateserial -out mgmt.crt -days 3650 -sha256 ' + \
+                '-extfile mgmt_cert.conf'
+    os.system(command)
+
+    with open('mgmt.crt') as fileptr3:
+        mgmt_cert = fileptr3.read()
+    sleep(2)
+    os.chdir('..')
+    return mgmt_cert
+
 def rtr_install_cert(device='', cert=''):
+    # NOT BEING USED RIGHT NOW    
     device.api.crypto_pki_import(cert, label_name='MAV6-TP')
 
 

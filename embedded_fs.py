@@ -1,8 +1,6 @@
 import socket
 import ssl
 
-from termcolor import colored
-
 from mav6utils import *
 from tftpy import TftpServer
 
@@ -68,7 +66,7 @@ def start_server(transfer_protocol='tftp', ip=''):
             server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
         wrapped_socket = context.wrap_socket(server_socket, server_side=True)
-        wrapped_socket.bind((ip, 14443))
+        wrapped_socket.bind((ip, 443))
         wrapped_socket.listen(1)
         while True:
             try:
