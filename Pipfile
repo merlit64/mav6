@@ -16,6 +16,8 @@ paramiko = "*"
 ntplib = "*"
 genie = "*"
 pyftpdlib = "*"
+pyopenssl = "*"
+crypto = "*"
 
 [dev-packages]
 
