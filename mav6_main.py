@@ -89,7 +89,7 @@ def connect_host(device = '', protocol = '', command = ' '):
         dev.configure('file prompt quiet')
         dev.execute(command)
 
-    return dev, testbed
+    return dev
 
 
 def file_on_flash(device, filename='test.txt'):
@@ -152,32 +152,15 @@ def ping_host(ip):
 def ping_client(device = ''):
     # ping_client connects to the test device and tries to ping an
     #   ip address from there.
-    device, testbed = connect_host(device, 'ssh')
+    device = connect_host(device, 'ssh')
     print(colored(('Attempting ping client test...'), 'yellow'))
     print(device.ping(LOCAL_DEVICE))
 
-    
-# pyATS Connection Function
-# device - hostname of device being tested
-# protocol - connection protocol being tested (telnet or ssh)
-# command - command used to test connection
-def connect_host(device = '', protocol = '', command = ' ', log_stdout=False):
-    testbed = loader.load('pyATS/testbed.yaml')
-
-    test = testbed.devices[device]
-
-    test.connect(via = protocol, log_stdout=False)
-
-    if (not command.isspace):
-        device.execute(command)
-
-    return test, testbed
-    
-# HTTP Test Function
-# verify - uses HTTPS if set to false
+        
 def http_test(ip= '', verify = True):
-# http_test makes an http get request to the test device
-# verify - uses HTTPS if set to false
+    # HTTP Test Function
+    # http_test makes an http get request to the test device
+    # verify - uses HTTPS if set to false
     try:
         ip2 = ipaddr.IPAddress(ip)
         print(colored(("IP address is good.  Version is IPv%s" % ip2.version), "green"))
@@ -204,24 +187,25 @@ def http_test(ip= '', verify = True):
         print(colored((http_print + " Test Failed (Status code " + code + ")\n"), "red"))
 
 
-# telnet client test function
 def telnet_client(hostname, server_name, server_ip, user, secret):
-    device, testbed = connect_host(hostname, 'ssh')
+    # telnet client test function
+    device = connect_host(hostname, 'ssh')
     if (utils.perform_telnet(device, server_name, server_ip, user, secret)):
         print(colored('Telnet client test successful', 'green'))
     else:
         print(colored('Telnet client test failed', 'red'))
-            
-# ssh client test function
+
+
 def ssh_client(hostname, server_name, server_ip, user, secret):
-    device, testbed = connect_host(hostname, 'ssh')
+    # ssh client test function
+    device = connect_host(hostname, 'ssh')
     if (utils.perform_ssh(device, server_name, server_ip, user, secret)):
         print(colored('SSH client test successful', 'green'))
     else:
         print(colored('SSH client test failed', 'red'))
         
 def ntp_client(hostname):
-    device, testbed = connect_host(hostname, 'ssh', log_stdout=True)
+    device = connect_host(hostname, 'ssh', log_stdout=True)
     
     ntp_config = [NTP_TEST_SERVER]
     print(colored('Attempting NTP server configuration...', 'yellow'))
@@ -832,7 +816,7 @@ if SSH_CLIENT:
 # TFTP client Test
 if TFTP_CLIENT:
     # Connect to test device and check for test file on flash
-    device, testbed = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
+    device = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
     if(file_on_flash(device, filename='test.txt')):
         del_from_flash(device, 'test.txt')
     if (ip_version(TEST_DEVICE) == 4):
@@ -867,7 +851,7 @@ if TFTP_CLIENT:
 # FTP Client test
 if FTP_CLIENT:
     # Connect to test device and check for test file on flash
-    device, testbed = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
+    device = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
     if(file_on_flash(device, filename='test.txt')):
         del_from_flash(device, 'test.txt')
 
@@ -902,7 +886,7 @@ if FTP_CLIENT:
 # HTTP client Test
 if HTTP_CLIENT:
     # Connect to test device and check for test file on flash
-    device, testbed = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
+    device = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
     if(file_on_flash(device, filename='test.txt')):
         del_from_flash(device, 'test.txt')
 
@@ -934,7 +918,7 @@ if HTTP_CLIENT:
 # HTTPS client Test
 if HTTPS_CLIENT:
     # Connect to test device and check for test file on flash
-    device, testbed = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
+    device = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
     if(file_on_flash(device, filename='test.txt')):
         del_from_flash(device, 'test.txt')
     
@@ -1008,7 +992,7 @@ if SNMPV2_TRAP:
     #snmp_trap_send(destination=mav6_ip, port=162, snmp_version=2)
     
     # Configure TEST_DEVICE to send SNMP traps to trap receiver
-    device, testbed = connect_host(TEST_DEVICE_HOSTNAME, 'ssh')
+    device = connect_host(TEST_DEVICE_HOSTNAME, 'ssh')
     device.configure ('snmp-server host ' + mav6_ip + ' traps version 2c ' + COM_RW + \
                       ' udp-port 162 config\n' )
 
@@ -1055,7 +1039,7 @@ if SNMPV3_TRAP:
     snmp_trap_send(destination=mav6_ip, port=162, snmp_version=3)
 
     # Configure TEST_DEVICE to send SNMP traps to trap receiver
-    device, testbed = connect_host(TEST_DEVICE_HOSTNAME, 'ssh')
+    device = connect_host(TEST_DEVICE_HOSTNAME, 'ssh')
     device.configure ('snmp-server group mav6group v3 noauth\n' + \
                         'snmp-server user mav6user mav6group v3\n' + \
                         'snmp-server enable traps\n' + \
