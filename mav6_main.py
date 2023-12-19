@@ -294,7 +294,9 @@ if HTTPS_CLIENT:
     # Create CA on Mav6 and create a signed cert for Mav6 https server
     #ca_create_key_and_cert(directory=CA_DIRECTORY, key_cert_name=CA_CERT_NAME, issuer='self')
     #ca_create_key_and_cert(directory=CA_DIRECTORY, key_cert_name='server', issuer=CA_CERT_NAME)
-    ca_buildca(server_ip='10.112.1.106')
+    ca_create_directory(directory_name=CA_DIRECTORY)
+    ca_build_ca('10.112.1.106', directory_name=CA_DIRECTORY)
+    ca_build_server('10.112.1.106', SERVER_CSR_CONF, SERVER_CERT_CONF, 'server', CA_DIRECTORY)
 
 
     # Start Server
@@ -309,11 +311,12 @@ if HTTPS_CLIENT:
         # USE PYATS TO INSTALL THE ROUTER CERT
 
 
-        rtr_add_trustpoint(device)
-        rtr_authenticate_rootca(device)
-        csr = rtr_build_csr(device)
-        rtr_cert = ca_sign_csr(csr)
-        rtr_install_cert(device, rtr_cert)
+        rtr_add_trustpoint(device, CA_DIRECTORY)
+        rtr_authenticate_rootca(device, CA_DIRECTORY)
+        #csr = rtr_build_csr(device)
+        #rtr_cert = ca_sign_csr_cli(csr, hash='sha256',
+        #                           test_device_cert_conf=TEST_DEVICE_CERT_CONF)
+        #rtr_install_cert(device, rtr_cert)
 
         # SIGN THE CSR WITH THE CA
 
