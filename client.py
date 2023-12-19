@@ -15,16 +15,13 @@ from pysnmp.entity import engine, config
 from pysnmp.entity.rfc3413 import ntfrcv, context, cmdrsp
 from pysnmp.proto import rfc1902
 
-COM_RW = 'fix_this'
-NTP_TEST_SERVER = 'fix_this'
-LOCAL_DEVICE = 'fix_this'
 
-def ping_client(device = ''):
+def ping_client(device = '', device_to_ping=''):
     # ping_client connects to the test device and tries to ping an
     #   ip address from there.
     device = connect_host(device, 'ssh')
     print(colored(('Attempting ping client test...'), 'yellow'))
-    print(device.ping(LOCAL_DEVICE))
+    print(device.ping(device_to_ping))
 
         
 
@@ -45,10 +42,10 @@ def ssh_client(hostname, server_name, server_ip, user, secret):
     else:
         print(colored('SSH client test failed', 'red'))
         
-def ntp_client(hostname):
+def ntp_client(hostname, ntp_server=''):
     device = connect_host(hostname, 'ssh', log_stdout=True)
     
-    ntp_config = [NTP_TEST_SERVER]
+    ntp_config = [ntp_server]
     print(colored('Attempting NTP server configuration...', 'yellow'))
     configure_ntp_server(device, ntp_config)
     output = device.execute("show run | include ntp")
@@ -59,7 +56,7 @@ def ntp_client(hostname):
         print(colored(message, 'green'))
     
 
-def snmp_start_trap_receiver(q, snmp_version=2, ip='', port=162):
+def snmp_start_trap_receiver(q, snmp_version=2, ip='', port=162, community=''):
     # snmp_start_trap_receiver will be called as its own process
     #   It starts a MAV6 embedded trap reciever that will
     #   collect SNMP traps from the test device
@@ -88,7 +85,7 @@ def snmp_start_trap_receiver(q, snmp_version=2, ip='', port=162):
 
     if (snmp_version == 2):
         print('starting snmp trap receiver v2...')
-        config.addV1System(snmp_engine, 'my-area', COM_RW)
+        config.addV1System(snmp_engine, 'my-area', community)
     elif (snmp_version == 3):
         print('starting snmp trap receiver v3...')
         config.addV3User(snmp_engine, 'mavuser')
