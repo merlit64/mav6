@@ -5,8 +5,8 @@ from termcolor import colored
 # pyATS
 from pyats.topology import loader
 from pyats.utils.fileutils import FileUtils
-from genie.libs.sdk.apis.iosxe import utils
 from genie.libs.sdk.apis.iosxe.ntp.configure import *
+from unicon.eal.dialogs import Dialog, Statement
 
 # for SNMP tests
 from pysnmp.hlapi import *
@@ -23,7 +23,54 @@ def ping_client(device = '', device_to_ping=''):
     print(colored(('Attempting ping client test...'), 'yellow'))
     print(device.ping(device_to_ping))
 
-        
+def perform_ssh(device, ip_address, username, password):
+    
+    ssh_dict = {
+                'pass_timeout_expire_flag': False,
+                'ssh_pass_case_flag': False,
+                'enable_pass_flag': False
+                }
+
+    def pass_timeout_expire():
+        ssh_dict['pass_timeout_expire_flag'] = True
+
+    def send_pass(spawn):
+        spawn.sendline(password)
+
+    def ssh_pass_case(spawn):
+        ssh_dict['ssh_pass_case_flag'] = True
+        # command to exit from the active ssh session from the device prompt itself.
+        cli_command = 'exit'
+        spawn.sendline(cli_command)
+
+    dialog = Dialog([
+
+            Statement(pattern=r"Password:\s*timeout expired!",
+                      action=pass_timeout_expire,
+                      loop_continue=False),
+            Statement(pattern=r"Password:",
+                      action=send_pass,
+                      loop_continue=True),
+            Statement(pattern=r':~\$',
+                      action=ssh_pass_case,
+                      loop_continue=False),
+
+    ])
+
+    cmd = f'ssh -l {username}'
+
+    cmd += f' {ip_address}'
+
+    try:
+        device.execute(cmd, reply=dialog, prompt_recovery=True, timeout=40)
+
+    except Exception as e:
+        log.info(f"Error occurred while performing ssh : {e}")
+
+    if ssh_dict['pass_timeout_expire_flag']:
+        return False
+    if ssh_dict['ssh_pass_case_flag']:
+        return True
 
 def telnet_client(hostname, server_name, server_ip, user, secret):
     # telnet client test function
@@ -34,10 +81,10 @@ def telnet_client(hostname, server_name, server_ip, user, secret):
         print(colored('Telnet client test failed', 'red'))
 
 
-def ssh_client(hostname, server_name, server_ip, user, secret):
+def ssh_client(hostname, server_ip, user, secret):
     # ssh client test function
     device = connect_host(hostname, 'ssh')
-    if (utils.perform_ssh(device, server_name, server_ip, user, secret)):
+    if (perform_ssh(device, server_ip, user, secret)):
         print(colored('SSH client test successful', 'green'))
     else:
         print(colored('SSH client test failed', 'red'))
