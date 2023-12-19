@@ -152,7 +152,7 @@ print("Executing Client Tests (where test box acts as the client):\n\n")
 
 # Ping Client Test
 if PING_CLIENT:
-    ping_client('mgmt')
+    ping_client('mgmt', device_to_ping=LOCAL_DEVICE)
 
 
 # Telnet Client Test
@@ -350,7 +350,7 @@ if SNMPV2_TRAP:
 
     q = Queue()
     snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
-                                         args=(q,2, mav6_ip,162,))
+                                         args=(q,2, mav6_ip,162,COM_RW))
 
     print('starting snmpv2 trap receiver process')
     snmp_trap_receiver_process.start()
@@ -444,7 +444,7 @@ if SNMPV3_TRAP:
 # pyATS https://developer.cisco.com/docs/genie-docs/
 # https://developer.cisco.com/docs/genie-docs/
 if NTP_CLIENT:
-    ntp_client('C8000V')
+    ntp_client('C8000V', NTP_TEST_SERVER)
     
 
 # DHCP Client Test
