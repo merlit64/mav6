@@ -25,32 +25,11 @@ def ca_create_directory(ca_directory = '', overwrite=True):
     os.mkdir(ca_directory)
     
 
-def ca_build_ca(ca_directory=''):
-    # This function builds a CA server by creating rootCA.key and rootCA.crt rootCA.fpt in the designated directory
-    # ca_directory - relative path where to build the rootCA files
-
-    os.chdir(ca_directory)
-    command = 'openssl req -x509 -sha256 -days 3650 -nodes  -newkey rsa:4096 -subj ' + \
-                '"/CN=mav6b.ciscofederal.com/C=US/L=Richfield/ST=Ohio"  -keyout rootCA.key -out rootCA.crt'
-    os.system(command)
-
-    # get fingerprint of rootCA.crt
-    command = 'openssl x509 -in rootCA.crt -noout -fingerprint >> rootCA.fpt'
-    os.system(command)
-    with open('rootCA.fpt') as fileptr:
-        fingerprint = fileptr.read()
-    equal_position = fingerprint.rfind('=')
-    fingerprint=fingerprint[equal_position+1:]
-    fingerprint = fingerprint.replace(':', '')
-    sleep(1)
-
-    # Save the fingerprint to a file
-    with open('rootCA.fpt', 'w+') as f:
-        f.writelines(fingerprint)
-    os.chdir('..')
-
-
 def ca_create_key(ca_directory='', key_name=''):
+    # creates an RSA key pair and stores it in ca_directory
+    # ca_directory - the directory to store the keys in
+    # key_name - the base filename for the keys
+
     # Init a new PKey object and generate a 4096 RSA key pair
     key = crypto.PKey()
     key.generate_key(crypto.TYPE_RSA, 4096)
@@ -72,9 +51,13 @@ def ca_create_key(ca_directory='', key_name=''):
 
 def ca_create_cert(ca_directory='', key_name='', server_ip=''):
     # This function assumes the rootCA.key and rootCA.crt exist in the directory
+    #     and build a cert signed by the rootCA.crt
+    #     If key_name == 'rootCA', then this function will build rootCA.crt from rootCA.key
     # ca_directory - directory of certificate authority 
     # key_name - is the base filename of the existing key, i.e. 'server1' if key filename is server1.key
     #            it will also become the base filename for the new .crt file signed by the ca
+    #            If key_name is rootCA, rootCA.crt will be built from the key in the directory
+    #            and rootCA.fpt file will hold the fingerprint of the cert
 
     # Read rootCA.key and rootCA.crt and server public key into variables
     pub_key_name = key_name + '-pub.key'
@@ -83,16 +66,15 @@ def ca_create_cert(ca_directory='', key_name='', server_ip=''):
     ca_pub_key = crypto.load_publickey(crypto.FILETYPE_PEM, 
                                     open(os.path.join(ca_directory, 'rootCA-pub.key')).read())
     
-    if (key_name != 'rootCA'):
+    if (key_name != 'rootCA'): # building a server cert signed with ca key
         ca_cert = crypto.load_certificate(crypto.FILETYPE_PEM, 
                                           open(os.path.join(ca_directory, 'rootCA.crt')).read())
-        key = crypto.load_publickey(crypto.FILETYPE_PEM,
+        server_pub_key = crypto.load_publickey(crypto.FILETYPE_PEM,
                                     open(os.path.join(ca_directory, pub_key_name)).read()) 
-    else:
-        key = ca_pub_key
+    else: # We are building the rootCA.crt, signed by rootCA.key (self-signed)
+        server_pub_key = ca_pub_key
 
-
-    # Build the certificate and add parameters
+    # Instantiate the certificate object and add properties
     cert = crypto.X509()
     cert.get_subject().C = 'US'
     cert.get_subject().ST = 'Ohio'
@@ -105,7 +87,7 @@ def ca_create_cert(ca_directory='', key_name='', server_ip=''):
     cert.set_version(2)
     cert.gmtime_adj_notBefore(0)
     cert.gmtime_adj_notAfter(60*50*24*365*8)
-    cert.set_pubkey(key)
+    cert.set_pubkey(server_pub_key)
     if (key_name != 'rootCA'):
         cert.set_issuer(ca_cert.get_subject())
     else:
@@ -133,16 +115,11 @@ def ca_create_cert(ca_directory='', key_name='', server_ip=''):
     with open(cert_filename, 'w') as f3:
         f3.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode())
 
+    # If we build the rootCA.crt get the fingerprint for it and save it to rootCA.fpt file
     if (key_name == 'rootCA'):
         # get fingerprint of rootCA.crt
-        command = 'openssl x509 -in rootCA.crt -noout -fingerprint >> rootCA.fpt'
-        os.system(command)
-        with open('rootCA.fpt') as fileptr:
-            fingerprint = fileptr.read()
-        equal_position = fingerprint.rfind('=')
-        fingerprint=fingerprint[equal_position+1:]
+        fingerprint = cert.digest('sha1').decode()
         fingerprint = fingerprint.replace(':', '')
-        sleep(1)
 
         # Save the fingerprint to a file
         with open('rootCA.fpt', 'w+') as f:
@@ -256,5 +233,31 @@ def ca_sign_csr_cli(csr='', hash='sha256', test_device_cert_conf=''):
 def rtr_install_cert(device='', cert=''):
     # NOT BEING USED RIGHT NOW    
     device.api.crypto_pki_import(cert, label_name='MAV6-TP')
+
+
+def ca_build_ca(ca_directory=''):
+    # NO LONGER USED, SWAPPED IN PYOPENSSL BASED FUNCTION
+    # This function builds a CA server by creating rootCA.key and rootCA.crt rootCA.fpt in the designated directory
+    # ca_directory - relative path where to build the rootCA files
+
+    os.chdir(ca_directory)
+    command = 'openssl req -x509 -sha256 -days 3650 -nodes  -newkey rsa:4096 -subj ' + \
+                '"/CN=mav6b.ciscofederal.com/C=US/L=Richfield/ST=Ohio"  -keyout rootCA.key -out rootCA.crt'
+    os.system(command)
+
+    # get fingerprint of rootCA.crt
+    command = 'openssl x509 -in rootCA.crt -noout -fingerprint >> rootCA.fpt'
+    os.system(command)
+    with open('rootCA.fpt') as fileptr:
+        fingerprint = fileptr.read()
+    equal_position = fingerprint.rfind('=')
+    fingerprint=fingerprint[equal_position+1:]
+    fingerprint = fingerprint.replace(':', '')
+    sleep(1)
+
+    # Save the fingerprint to a file
+    with open('rootCA.fpt', 'w+') as f:
+        f.writelines(fingerprint)
+    os.chdir('..')
 
 

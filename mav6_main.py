@@ -294,6 +294,7 @@ if HTTPS_CLIENT:
     #ca_build_ca(ca_directory=CA_DIRECTORY)
     ca_create_key(ca_directory=CA_DIRECTORY, key_name='rootCA')
     ca_create_cert(ca_directory=CA_DIRECTORY, key_name='rootCA', server_ip=MAV6_IPV4)
+    ca_create_key(ca_directory=CA_DIRECTORY, key_name='server')
 
     # Start Server, server will use cert stored in CA directory
     print('starting https server process')
