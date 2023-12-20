@@ -288,59 +288,44 @@ if HTTPS_CLIENT:
     device = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
     if(file_on_flash(device, filename='test.txt')):
         del_from_flash(device, 'test.txt')
-    
-    # USE OS COMMANDS TO CREATE DIR, OPENSSL ROOTCA.KEY ROOTCA.CRT, SERVER.KEY, SERVER.CSR
-    # SERVER.CRT, 
+
     # Create CA on Mav6 and create a signed cert for Mav6 https server
-    #ca_create_key_and_cert(directory=CA_DIRECTORY, key_cert_name=CA_CERT_NAME, issuer='self')
-    #ca_create_key_and_cert(directory=CA_DIRECTORY, key_cert_name='server', issuer=CA_CERT_NAME)
-    ca_create_directory(directory_name=CA_DIRECTORY)
-    ca_build_ca('10.112.1.106', directory_name=CA_DIRECTORY)
-    ca_build_server('10.112.1.106', SERVER_CSR_CONF, SERVER_CERT_CONF, 'server', CA_DIRECTORY)
+    ca_create_directory(ca_directory=CA_DIRECTORY)
+    ca_build_ca(ca_directory=CA_DIRECTORY)
+    ca_create_cert(ca_directory=CA_DIRECTORY, key_name='server')
+    #ca_build_server_cert(SERVER_CSR_CONF, SERVER_CERT_CONF, 'server', CA_DIRECTORY)
 
-
-    # Start Server
+    # Start Server, server will use cert stored in CA directory
     print('starting https server process')
     if (ip_version(TEST_DEVICE) == 4):
         https_server_process = Process(target=start_server, name='httpsserver', 
                                        args=('https',MAV6_IPV4,))
-        https_server_process.start()
-        sleep(5)
-        # USE PYATS TO CREATE THE KEYS, TP, AUTHENTICATE THE ROOTCA.CRT, CREATE ROUTER CSR
-        # USE CA TO SIGN THE CSR
-        # USE PYATS TO INSTALL THE ROUTER CERT
-
-
-        rtr_add_trustpoint(device, CA_DIRECTORY)
-        rtr_authenticate_rootca(device, CA_DIRECTORY)
-        #csr = rtr_build_csr(device)
-        #rtr_cert = ca_sign_csr_cli(csr, hash='sha256',
-        #                           test_device_cert_conf=TEST_DEVICE_CERT_CONF)
-        #rtr_install_cert(device, rtr_cert)
-
-        # SIGN THE CSR WITH THE CA
-
-        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME,  device_protocol='ssh',
-                                     server_ip=MAV6_IPV4, transfer_protocol='https')
     else:
         https_server_process = Process(target=start_server, name='httpsserver', 
                                        args=('https',MAV6_IPV6,))
-        https_server_process.start()
-        sleep(5)
-        # USE PYATS TO CREATE THE KEYS, TP, AUTHENTICATE THE ROOTCA.CRT, CREATE ROUTER CSR
-        # USE CA TO SIGN THE CSR
-        # USE PYATS TO INSTALL THE ROUTER CERT
+
+    https_server_process.start()
+    sleep(5)
+
+    # Add a trustpoint in the router that trusts the mav6 CA
+    rtr_add_trustpoint(device, CA_DIRECTORY)
+    rtr_authenticate_rootca(device, CA_DIRECTORY)
+
+    # Try the copy https: flash: command 
+    if (ip_version(TEST_DEVICE) == 4):
+        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME,  device_protocol='ssh',
+                                     server_ip=MAV6_IPV4, transfer_protocol='https')
+    else:
         filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME,  device_protocol='ssh',
                                      server_ip=MAV6_IPV6, transfer_protocol='https')
-
 
     # Check to see if file transfer was successful and print message
     if (file_on_flash(device, filename='test.txt')):
         print(colored("HTTPS Client Test Successful", "green"))
     else:
         print(colored("HTTPS Client Test Failed", "red"))
-    
     sleep(2)
+
     https_server_process.kill()
 
 
