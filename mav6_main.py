@@ -291,17 +291,18 @@ if HTTPS_CLIENT:
 
     # Create CA on Mav6 and create a signed cert for Mav6 https server
     ca_create_directory(ca_directory=CA_DIRECTORY)
-    ca_build_ca(ca_directory=CA_DIRECTORY)
-    ca_create_key(ca_directory=CA_DIRECTORY, key_name='server')
-    ca_create_cert(ca_directory=CA_DIRECTORY, key_name='server')
-    #ca_build_server_cert(SERVER_CSR_CONF, SERVER_CERT_CONF, 'server', CA_DIRECTORY)
+    #ca_build_ca(ca_directory=CA_DIRECTORY)
+    ca_create_key(ca_directory=CA_DIRECTORY, key_name='rootCA')
+    ca_create_cert(ca_directory=CA_DIRECTORY, key_name='rootCA', server_ip=MAV6_IPV4)
 
     # Start Server, server will use cert stored in CA directory
     print('starting https server process')
     if (ip_version(TEST_DEVICE) == 4):
+        ca_create_cert(ca_directory=CA_DIRECTORY, key_name='server', server_ip=MAV6_IPV4)
         https_server_process = Process(target=start_server, name='httpsserver', 
                                        args=('https',MAV6_IPV4,))
     else:
+        ca_create_cert(ca_directory=CA_DIRECTORY, key_name='server', server_ip=MAV6_IPV6)
         https_server_process = Process(target=start_server, name='httpsserver', 
                                        args=('https',MAV6_IPV6,))
 
