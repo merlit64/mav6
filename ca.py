@@ -50,6 +50,106 @@ def ca_build_ca(ca_directory=''):
     os.chdir('..')
 
 
+def ca_create_key(ca_directory='', key_name=''):
+    # Init a new PKey object and generate a 4096 RSA key pair
+    key = crypto.PKey()
+    key.generate_key(crypto.TYPE_RSA, 4096)
+
+    # Read private and public keys into variables
+    key_private = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
+    key_public = crypto.dump_publickey(crypto.FILETYPE_PEM, key)
+
+    # Write keys to ca_directory
+    os.chdir(ca_directory)
+    priv_key_name = key_name + '.key'
+    pub_key_name = key_name + '-pub.key'
+    with open(priv_key_name, 'w') as f:
+        f.write(key_private.decode())
+    with open(pub_key_name, 'w') as f:
+        f.write(key_public.decode())
+    os.chdir('..')
+
+
+def ca_create_cert(ca_directory='', key_name='', server_ip=''):
+    # This function assumes the rootCA.key and rootCA.crt exist in the directory
+    # ca_directory - directory of certificate authority 
+    # key_name - is the base filename of the existing key, i.e. 'server1' if key filename is server1.key
+    #            it will also become the base filename for the new .crt file signed by the ca
+
+    # Read rootCA.key and rootCA.crt and server public key into variables
+    pub_key_name = key_name + '-pub.key'
+    ca_key = crypto.load_privatekey(crypto.FILETYPE_PEM, 
+                                    open(os.path.join(ca_directory, 'rootCA.key')).read())
+    ca_pub_key = crypto.load_publickey(crypto.FILETYPE_PEM, 
+                                    open(os.path.join(ca_directory, 'rootCA-pub.key')).read())
+    
+    if (key_name != 'rootCA'):
+        ca_cert = crypto.load_certificate(crypto.FILETYPE_PEM, 
+                                          open(os.path.join(ca_directory, 'rootCA.crt')).read())
+        key = crypto.load_publickey(crypto.FILETYPE_PEM,
+                                    open(os.path.join(ca_directory, pub_key_name)).read()) 
+    else:
+        key = ca_pub_key
+
+
+    # Build the certificate and add parameters
+    cert = crypto.X509()
+    cert.get_subject().C = 'US'
+    cert.get_subject().ST = 'Ohio'
+    cert.get_subject().L = 'Richfield'
+    cert.get_subject().O = 'Cisco'
+    cert.get_subject().OU = 'Mav6'
+    cert.get_subject().CN = key_name + '.mav6.lab'
+    cert.get_subject().emailAddress = 'mav6@cisco.com'
+    cert.set_serial_number(random.randrange(100000))
+    cert.set_version(2)
+    cert.gmtime_adj_notBefore(0)
+    cert.gmtime_adj_notAfter(60*50*24*365*8)
+    cert.set_pubkey(key)
+    if (key_name != 'rootCA'):
+        cert.set_issuer(ca_cert.get_subject())
+    else:
+        cert.set_issuer(cert.get_subject())
+    cert.add_extensions([
+        crypto.X509Extension(b'subjectAltName', False,
+            ','.join([
+                #'DNS:%s' % socket.gethostname(),
+                #'DNS:*.%s' % socket.gethostname(),
+                'DNS:localhost',
+                'DNS:*.localhost',
+                ('DNS:' + key_name),
+                ('DNS:' + key_name + '.ciscofederal.com'),
+                ('IP:' + server_ip),                
+                ]).encode()),
+        #crypto.X509Extension(b"authorityKeyIdentifier", True, b"keyid,issuer"),
+        crypto.X509Extension(b"basicConstraints", True, b"CA:false"),
+        #crypto.X509Extension(b"keyUsage", True, b"digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment"),
+        ])
+    cert.sign(ca_key, 'SHA256')
+
+    # Write cert to ca_directory
+    os.chdir(ca_directory)
+    cert_filename = key_name + '.crt'
+    with open(cert_filename, 'w') as f3:
+        f3.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode())
+
+    if (key_name == 'rootCA'):
+        # get fingerprint of rootCA.crt
+        command = 'openssl x509 -in rootCA.crt -noout -fingerprint >> rootCA.fpt'
+        os.system(command)
+        with open('rootCA.fpt') as fileptr:
+            fingerprint = fileptr.read()
+        equal_position = fingerprint.rfind('=')
+        fingerprint=fingerprint[equal_position+1:]
+        fingerprint = fingerprint.replace(':', '')
+        sleep(1)
+
+        # Save the fingerprint to a file
+        with open('rootCA.fpt', 'w+') as f:
+            f.writelines(fingerprint)
+    os.chdir('..')
+
+    
 def rtr_add_trustpoint(device='', ca_directory=''):
     # This function adds the trustpoint configuration to the router, A trustpoint in Cisco's language is simply a pointer to a trusted CA
     # This function builds the configuration, but it must be completed by "authenticating" or importing the root certficicate
@@ -102,80 +202,6 @@ def rtr_authenticate_rootca(device='', ca_directory=''):
     sleep(2)
 
 
-def ca_create_key(ca_directory='', key_name=''):
-    # Init a new PKey object and generate a 4096 RSA key pair
-    key = crypto.PKey()
-    key.generate_key(crypto.TYPE_RSA, 4096)
-
-    # Read private and public keys into variables
-    key_private = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
-    key_public = crypto.dump_publickey(crypto.FILETYPE_PEM, key)
-
-    # Write keys to ca_directory
-    os.chdir(ca_directory)
-    priv_key_name = key_name + '.key'
-    pub_key_name = key_name + '-pub.key'
-    with open(priv_key_name, 'w') as f:
-        f.write(key_private.decode())
-    with open(pub_key_name, 'w') as f:
-        f.write(key_public.decode())
-    os.chdir('..')
-
-
-def ca_create_cert(ca_directory='', key_name=''):
-    # This function assumes the rootCA.key and rootCA.crt exist in the directory
-    # ca_directory - directory of certificate authority 
-    # key_name - is the base filename of the existing key, i.e. 'server1' if key filename is server1.key
-    #            it will also become the base filename for the new .crt file signed by the ca
-
-    # Read rootCA.key and rootCA.crt and server public key into variables
-    pub_key_name = key_name + '-pub.key'
-    ca_key = crypto.load_privatekey(crypto.FILETYPE_PEM, 
-                                    open(os.path.join(ca_directory, 'rootCA.key')).read())
-    ca_cert = crypto.load_certificate(crypto.FILETYPE_PEM, 
-                                      open(os.path.join(ca_directory, 'rootCA.crt')).read())
-    key = crypto.load_publickey(crypto.FILETYPE_PEM,
-                                open(os.path.join(ca_directory, pub_key_name)).read()) 
-
-    # Build the certificate and add parameters
-    cert = crypto.X509()
-    cert.get_subject().C = 'US'
-    cert.get_subject().ST = 'Ohio'
-    cert.get_subject().L = 'Richfield'
-    cert.get_subject().O = 'Cisco'
-    cert.get_subject().OU = 'Mav6'
-    cert.get_subject().CN = key_name + '.mav6.lab'
-    cert.get_subject().emailAddress = 'mav6@cisco.com'
-    cert.set_serial_number(random.randrange(100000))
-    cert.set_version(2)
-    cert.gmtime_adj_notBefore(0)
-    cert.gmtime_adj_notAfter(60*50*24*365*8)
-    cert.set_issuer(ca_cert.get_subject())
-    cert.set_pubkey(key)
-
-    cert.add_extensions([
-        crypto.X509Extension(b'subjectAltName', False,
-            ','.join([
-                #'DNS:%s' % socket.gethostname(),
-                #'DNS:*.%s' % socket.gethostname(),
-                'DNS:localhost',
-                'DNS:*.localhost',
-                'DNS:server',
-                'DNS:server.ciscofederal.com',
-                'IP:10.112.1.106',                
-                ]).encode()),
-        #crypto.X509Extension(b"authorityKeyIdentifier", True, b"keyid,issuer"),
-        crypto.X509Extension(b"basicConstraints", True, b"CA:false"),
-        #crypto.X509Extension(b"keyUsage", True, b"digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment"),
-        ])
-    cert.sign(ca_key, 'SHA256')
-
-    # Write cert to ca_directory
-    os.chdir(ca_directory)
-    cert_filename = key_name + '.crt'
-    with open(cert_filename, 'w') as f3:
-        f3.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode())
-    os.chdir('..')
 ###########################
 
 def rtr_build_csr(device=''):
