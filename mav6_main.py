@@ -292,6 +292,7 @@ if HTTPS_CLIENT:
     # Create CA on Mav6 and create a signed cert for Mav6 https server
     ca_create_directory(ca_directory=CA_DIRECTORY)
     ca_build_ca(ca_directory=CA_DIRECTORY)
+    ca_create_key(ca_directory=CA_DIRECTORY, key_name='server')
     ca_create_cert(ca_directory=CA_DIRECTORY, key_name='server')
     #ca_build_server_cert(SERVER_CSR_CONF, SERVER_CERT_CONF, 'server', CA_DIRECTORY)
 
