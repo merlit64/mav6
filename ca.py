@@ -139,22 +139,15 @@ def rtr_add_trustpoint(device='', ca_directory=''):
         fingerprint = fileptr.read()
 
     # send the trustpoint configuration to the router
-    '''
-    device.api.configure_trustpoint(tp_name='MAV6-TP', 
-                                    usage_option='ssl-client', revocation_check='none',
-                                    fingerprint=fingerprint, revoke_check='none'    )
-    
-    device.api.configure_pki_trustpoint(enrollment_type='terminal'  )
-    '''
     device.configure ('crypto pki trustpoint MAV6-TP\n' + \
                         'enrollment terminal\n' + \
                         'usage ssl-client\n' + \
                         'revocation-check none \n' + \
                         'fingerprint  ' + fingerprint + '\n'
                         )
-    
 
-def rtr_remove_tp(device=''):
+
+def rtr_remove_trustpoint(device=''):
     # THIS FUNCTION IS NOT CURRENTLY USED AND IS UNTESTED
     # This function removes the trustpoint from the router
     device.configure ('no crypto pki authenticate MAV6-TP\n' + 'yes\n' )

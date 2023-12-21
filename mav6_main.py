@@ -103,8 +103,12 @@ if SCP_SERVER:
 
 # TFTP Server Test
 if TFTP_SERVER:
-    tftp_server_download(TEST_DEVICE, port=69, filename='test.cfg')
-
+    result = tftp_server_download(TEST_DEVICE, port=69, filename='test.cfg')
+    if (result):
+        print(colored("TFTP Client Test Successful", "green"))
+    else:
+        print(colored("TFTP Client Test Failed", "red"))
+ 
 
 # HTTP Server Test
 if HTTP_SERVER:
@@ -182,38 +186,7 @@ if SSH_CLIENT:
 
 # TFTP client Test
 if TFTP_CLIENT:
-    # Connect to test device and check for test file on flash
-    device = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
-    if(file_on_flash(device, filename='test.txt')):
-        del_from_flash(device, 'test.txt')
-    if (ip_version(TEST_DEVICE) == 4):
-        tftp_server_process = Process(target=start_server, name='tftpserver', 
-                                      args=('tftp', MAV6_IPV4,))
-    else:
-        tftp_server_process = Process(target=start_server, name='tftpserver', 
-                                      args=('tftp', MAV6_IPV6,))
-
-
-    print('starting tftp server process')
-    tftp_server_process.start()
-    sleep(5)
-
-    if (ip_version(TEST_DEVICE) == 4):
-        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME, device_protocol='ssh',
-                                 server_ip=MAV6_IPV4, transfer_protocol='tftp')
-    else:
-        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME, device_protocol='ssh',
-                                 server_ip=MAV6_IPV6, transfer_protocol='tftp')
-
-
-    # Check to see if file transfer was successful and print message
-    if (file_on_flash(device, filename='test.txt')):
-        print(colored("TFTP Client Test Successful", "green"))
-    else:
-        print(colored("TFTP Client Test Failed", "red"))
-    
-    sleep(2)
-    tftp_server_process.kill()
+    file_transfer_client(protocol='tftp', test_device_hostname=TEST_DEVICE_HOSTNAME, test_device_ip=TEST_DEVICE, mav6_ipv4=MAV6_IPV4, mav6_ipv6=MAV6_IPV6)
 
 # FTP Client test
 if FTP_CLIENT:
