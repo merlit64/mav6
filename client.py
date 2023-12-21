@@ -215,6 +215,54 @@ def snmp_trap_send(destination='', port=162, snmp_version = 2):
     if(errorIndication):
         print(errorIndication)
 
+def snmp_trap_client(snmp_version=2, comm_uname='', mav6_ip='', test_device_hostname='', test_device_ip='' ):
+
+    q = Queue()
+    snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
+                                         args=(q,2, mav6_ip,162,comm_uname))
+
+    print('starting snmpv2 trap receiver process')
+    snmp_trap_receiver_process.start()
+    sleep(5)
+    # Below sends a test trap from mav6 to mav6 trap receiver, leave commented unless testing
+    #snmp_trap_send(destination=mav6_ip, port=162, snmp_version=snmp_version)
+    
+    # Configure TEST_DEVICE to send SNMP traps to trap receiver
+    device = connect_host(test_device_hostname, 'ssh')
+    if snmp_version == 2:
+        device.configure ('snmp-server host ' + mav6_ip + ' traps version 2c ' + comm_uname + \
+                          ' udp-port 162 config\n' )
+    elif snmp_version == 3:
+        device.configure ('snmp-server group mav6group v3 noauth\n' + \
+                            'snmp-server user mav6user mav6group v3\n' + \
+                            'snmp-server enable traps\n' + \
+                            'snmp-server host ' + mav6_ip + ' traps version 3 noauth mav6user\n'
+                            )
+    else:
+        print('That version of SNMP does not exist')
+        SystemExit()
+
+    sleep(5)    
+
+    # Check the queue created by the SNMP receiver for a trap sent by TEST_DEVICE
+    received_snmp = False
+    while(not q.empty()):
+        message = q.get()
+        if('my system' in message):
+            print('SNMP message arrived at receiver from snmp_trap_send test function') 
+        elif('***REMOVED***' in message):
+            print('SNMP message arrived at receiver from TEST_DEVICE')
+            received_snmp = True
+        else:
+            # Unknown SNMP sender
+            pass 
+
+    sleep(2)
+    snmp_trap_receiver_process.kill()
+
+    return received_snmp
+
+
 
 def filetransfer_client_download(device_hostname='', device_protocol='ssh',
                                  server_ip='', transfer_protocol='tftp'):
