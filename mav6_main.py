@@ -15,7 +15,6 @@ from server import *
 from client import *
 from mav6utils import *
 from embedded_fs import *
-from ca import *
 
 ### PYPI LIBRARIES ###
 from termcolor import colored
@@ -103,11 +102,7 @@ if SCP_SERVER:
 
 # TFTP Server Test
 if TFTP_SERVER:
-    result = tftp_server_download(TEST_DEVICE, port=69, filename='test.cfg')
-    if (result):
-        print(colored("TFTP Client Test Successful", "green"))
-    else:
-        print(colored("TFTP Client Test Failed", "red"))
+    tftp_server_download(TEST_DEVICE, port=69, filename='test.cfg')
  
 
 # HTTP Server Test
@@ -186,123 +181,45 @@ if SSH_CLIENT:
 
 # TFTP client Test
 if TFTP_CLIENT:
-    file_transfer_client(protocol='tftp', test_device_hostname=TEST_DEVICE_HOSTNAME, test_device_ip=TEST_DEVICE, mav6_ipv4=MAV6_IPV4, mav6_ipv6=MAV6_IPV6)
+    mav6_ip = MAV6_IPV4 if ip_version(TEST_DEVICE) == 4 else MAV6_IPV6
+    result = file_transfer_client(protocol='tftp', test_device_hostname=TEST_DEVICE_HOSTNAME, 
+                                  test_device_ip=TEST_DEVICE, mav6_ip=mav6_ip)
+    if (result):
+        print(colored("TFTP Client Test Successful\n\n", "green"))
+    else:
+        print(colored("TFTP Client Test Failed\n\n", "red"))
 
 # FTP Client test
 if FTP_CLIENT:
-    # Connect to test device and check for test file on flash
-    device = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
-    if(file_on_flash(device, filename='test.txt')):
-        del_from_flash(device, 'test.txt')
-
-    if (ip_version(TEST_DEVICE) == 4):
-        ftp_server_process = Process(target=start_server, name='ftpserver', 
-                                     args=('ftp',MAV6_IPV4,))
+    mav6_ip = MAV6_IPV4 if ip_version(TEST_DEVICE) == 4 else MAV6_IPV6
+    result = file_transfer_client(protocol='ftp', test_device_hostname=TEST_DEVICE_HOSTNAME, 
+                                  test_device_ip=TEST_DEVICE, mav6_ip=mav6_ip)
+    if (result):
+        print(colored("FTP Client Test Successful\n\n", "green"))
     else:
-        ftp_server_process = Process(target=start_server, name='ftpserver', 
-                                     args=('ftp',MAV6_IPV6,))
-        
-    print('starting ftp server process')
-    ftp_server_process.start()
-    sleep(5)
-
-    if (ip_version(TEST_DEVICE) == 4):
-        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME, device_protocol='ssh',
-                                    server_ip=MAV6_IPV4, transfer_protocol='ftp')
-    else:
-        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME, device_protocol='ssh',
-                                    server_ip=MAV6_IPV6, transfer_protocol='ftp')
-
-
-    # Check to see if file transfer was successful and print message
-    if (file_on_flash(device, filename='test.txt')):
-        print(colored("FTP Client Test Successful", "green"))
-    else:
-        print(colored("FTP Client Test Failed", "red"))
-    
-    sleep(2)
-    ftp_server_process.kill()
+        print(colored("FTP Client Test Failed\n\n", "red"))
 
 # HTTP client Test
 if HTTP_CLIENT:
-    # Connect to test device and check for test file on flash
-    device = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
-    if(file_on_flash(device, filename='test.txt')):
-        del_from_flash(device, 'test.txt')
-
-    print('starting http server process')
-    if (ip_version(TEST_DEVICE) == 4):
-        http_server_process = Process(target=start_server, name='httpserver', 
-                                      args=('http', MAV6_IPV4,))
-        http_server_process.start()
-        sleep(5)
-        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME, device_protocol='ssh', 
-                                     server_ip=MAV6_IPV4, transfer_protocol='http')
+    mav6_ip = MAV6_IPV4 if ip_version(TEST_DEVICE) == 4 else MAV6_IPV6
+    result = file_transfer_client(protocol='http', test_device_hostname=TEST_DEVICE_HOSTNAME, 
+                                  test_device_ip=TEST_DEVICE, mav6_ip=mav6_ip)
+    if (result):
+        print(colored("HTTP Client Test Successful\n\n", "green"))
     else:
-        http_server_process = Process(target=start_server, name='httpserver', 
-                                      args=('http',MAV6_IPV6,))
-        http_server_process.start()
-        sleep(5)
-        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME,  device_protocol='ssh',
-                                     server_ip=MAV6_IPV6, transfer_protocol='http')
-    # Check to see if file transfer was successful and print message
-    if (file_on_flash(device, filename='test.txt')):
-        print(colored("HTTP Client Test Successful", "green"))
-    else:
-        print(colored("HTTP Client Test Failed", "red"))
-    
-    sleep(2)
-    http_server_process.kill()
+        print(colored("HTTP Client Test Failed\n\n", "red"))
 
 
 # HTTPS client Test
 if HTTPS_CLIENT:
-    # Connect to test device and check for test file on flash
-    device = connect_host( device=TEST_DEVICE_HOSTNAME, protocol='ssh')
-    if(file_on_flash(device, filename='test.txt')):
-        del_from_flash(device, 'test.txt')
-
-    # Create CA on Mav6 and create a signed cert for Mav6 https server
-    ca_create_directory(ca_directory=CA_DIRECTORY)
-    #ca_build_ca(ca_directory=CA_DIRECTORY)
-    ca_create_key(ca_directory=CA_DIRECTORY, key_name='rootCA')
-    ca_create_cert(ca_directory=CA_DIRECTORY, key_name='rootCA', server_ip=MAV6_IPV4)
-    ca_create_key(ca_directory=CA_DIRECTORY, key_name='server')
-
-    # Start Server, server will use cert stored in CA directory
-    print('starting https server process')
-    if (ip_version(TEST_DEVICE) == 4):
-        ca_create_cert(ca_directory=CA_DIRECTORY, key_name='server', server_ip=MAV6_IPV4)
-        https_server_process = Process(target=start_server, name='httpsserver', 
-                                       args=('https',MAV6_IPV4,))
+    mav6_ip = MAV6_IPV4 if ip_version(TEST_DEVICE) == 4 else MAV6_IPV6
+    result = file_transfer_client(protocol='https', test_device_hostname=TEST_DEVICE_HOSTNAME, 
+                                  test_device_ip=TEST_DEVICE, mav6_ip=mav6_ip,
+                                  ca_directory=CA_DIRECTORY)
+    if (result):
+        print(colored("HTTPS Client Test Successful\n\n", "green"))
     else:
-        ca_create_cert(ca_directory=CA_DIRECTORY, key_name='server', server_ip=MAV6_IPV6)
-        https_server_process = Process(target=start_server, name='httpsserver', 
-                                       args=('https',MAV6_IPV6,))
-
-    https_server_process.start()
-    sleep(5)
-
-    # Add a trustpoint in the router that trusts the mav6 CA
-    rtr_add_trustpoint(device, CA_DIRECTORY)
-    rtr_authenticate_rootca(device, CA_DIRECTORY)
-
-    # Try the copy https: flash: command 
-    if (ip_version(TEST_DEVICE) == 4):
-        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME,  device_protocol='ssh',
-                                     server_ip=MAV6_IPV4, transfer_protocol='https')
-    else:
-        filetransfer_client_download(device_hostname=TEST_DEVICE_HOSTNAME,  device_protocol='ssh',
-                                     server_ip=MAV6_IPV6, transfer_protocol='https')
-
-    # Check to see if file transfer was successful and print message
-    if (file_on_flash(device, filename='test.txt')):
-        print(colored("HTTPS Client Test Successful", "green"))
-    else:
-        print(colored("HTTPS Client Test Failed", "red"))
-    sleep(2)
-
-    https_server_process.kill()
+        print(colored("HTTPS Client Test Failed\n\n", "red"))
 
 
 # SNMP v2 Trap Test
@@ -342,15 +259,15 @@ if SNMPV2_TRAP:
             # Unknown SNMP sender
             pass 
 
-    # Print Test results to screen
-    if (received_snmp):
-        print(colored("SNMPv3 Trap Test Successful", "green"))
-    else:
-        print(colored("SNMPv3 Trap Test Failed", "red"))
-
-
     sleep(2)
     snmp_trap_receiver_process.kill()
+
+    # Print Test results to screen
+    if (received_snmp):
+        print(colored("SNMPv3 Trap Test Successful\n\n", "green"))
+    else:
+        print(colored("SNMPv3 Trap Test Failed\n\n", "red"))
+
 
 # SNMP v3 Trap Test
 if SNMPV3_TRAP:
@@ -391,16 +308,16 @@ if SNMPV3_TRAP:
             # Unknown SNMP sender
             pass 
 
-    # Print Test results to screen
-    if (received_snmp):
-        print(colored("SNMPv3 Trap Test Successful", "green"))
-    else:
-        print(colored("SNMPv3 Trap Test Failed", "red"))
-
-    
     sleep(2)
     snmp_trap_receiver_process.kill()
 
+    # Print Test results to screen
+    if (received_snmp):
+        print(colored("SNMPv3 Trap Test Successful\n\n", "green"))
+    else:
+        print(colored("SNMPv3 Trap Test Failed\n\n", "red"))
+
+    
 # NTP v4 Client Test
 # Linux Server
 # Python Script?

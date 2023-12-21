@@ -127,6 +127,15 @@ def ca_create_cert(ca_directory='', key_name='', server_ip=''):
     os.chdir('..')
 
     
+def rtr_remove_trustpoint(device=''):
+    # This function removes the trustpoint from the router if it exists
+    try:
+        device.api.unconfigure_trustpoint(tp_name='MAV6-TP')
+    except:
+        # no trustpoint to remove
+        pass
+
+
 def rtr_add_trustpoint(device='', ca_directory=''):
     # This function adds the trustpoint configuration to the router, A trustpoint in Cisco's language is simply a pointer to a trusted CA
     # This function builds the configuration, but it must be completed by "authenticating" or importing the root certficicate
@@ -145,12 +154,6 @@ def rtr_add_trustpoint(device='', ca_directory=''):
                         'revocation-check none \n' + \
                         'fingerprint  ' + fingerprint + '\n'
                         )
-
-
-def rtr_remove_trustpoint(device=''):
-    # THIS FUNCTION IS NOT CURRENTLY USED AND IS UNTESTED
-    # This function removes the trustpoint from the router
-    device.configure ('no crypto pki authenticate MAV6-TP\n' + 'yes\n' )
 
 
 def rtr_authenticate_rootca(device='', ca_directory=''):
