@@ -1,6 +1,7 @@
 from mav6utils import *
 from time import sleep
 from termcolor import colored
+from multiprocessing import Process, Queue
 
 # pyATS
 from pyats.topology import loader
@@ -14,6 +15,10 @@ from pysnmp.carrier.asynsock.dgram import udp, udp6
 from pysnmp.entity import engine, config
 from pysnmp.entity.rfc3413 import ntfrcv, context, cmdrsp
 from pysnmp.proto import rfc1902
+
+
+# Embedded file server function import
+from embedded_fs import *
 
 
 def ping_client(device = '', device_to_ping=''):
@@ -246,3 +251,36 @@ def filetransfer_client_download(device_hostname='', device_protocol='ssh',
         exit()
 
 
+def file_transfer_client(protocol='', test_device_hostname='', test_device_ip='', mav6_ipv4='', mav6_ipv6='', secured=False):
+    # Connect to test device and check for test file on flash
+    device = connect_host( device=test_device_hostname, protocol='ssh')
+    if(file_on_flash(device, filename='test.txt')):
+        del_from_flash(device, 'test.txt')
+    if (ip_version(test_device_ip) == 4):
+        embedded_server_process = Process(target=start_server, name='tftpserver', 
+                                      args=('tftp', mav6_ipv4,))
+    else:
+        embedded_server_process = Process(target=start_server, name='tftpserver', 
+                                      args=('tftp', mav6_ipv6,))
+
+
+    print('starting tftp server process')
+    embedded_server_process.start()
+    sleep(5)
+
+    if (ip_version(test_device_ip) == 4):
+        filetransfer_client_download(device_hostname=test_device_hostname, device_protocol='ssh',
+                                 server_ip=mav6_ipv4, transfer_protocol=protocol)
+    else:
+        filetransfer_client_download(device_hostname=test_device_hostname, device_protocol='ssh',
+                                 server_ip=mav6_ipv6, transfer_protocol=protocol)
+
+    sleep(2)
+    embedded_server_process.kill()
+
+    # Check to see if file transfer was successful and print message
+    if (file_on_flash(device, filename='test.txt')):
+        return True
+    else:
+        return False
+    
