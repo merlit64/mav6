@@ -224,98 +224,28 @@ if HTTPS_CLIENT:
 
 # SNMP v2 Trap Test
 if SNMPV2_TRAP:
-    if (ip_version(TEST_DEVICE) == 4):
-        mav6_ip = MAV6_IPV4
-    else:
-        mav6_ip = MAV6_IPV6
-
-    q = Queue()
-    snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
-                                         args=(q,2, mav6_ip,162,COM_RW))
-
-    print('starting snmpv2 trap receiver process')
-    snmp_trap_receiver_process.start()
-    sleep(5)
-    # Below sends a test trap from mav6 to mav6 trap receiver, leave commented unless testing
-    #snmp_trap_send(destination=mav6_ip, port=162, snmp_version=2)
-    
-    # Configure TEST_DEVICE to send SNMP traps to trap receiver
-    device = connect_host(TEST_DEVICE_HOSTNAME, 'ssh')
-    device.configure ('snmp-server host ' + mav6_ip + ' traps version 2c ' + COM_RW + \
-                      ' udp-port 162 config\n' )
-
-    sleep(5)    
-
-    # Check the queue created by the SNMP receiver for a trap sent by TEST_DEVICE
-    received_snmp = False
-    while(not q.empty()):
-        message = q.get()
-        if('my system' in message):
-            print('SNMPv3 message arrived at receiver from snmp_trap_send') 
-        elif('netconf' in message):
-            print('SNMPv3 message arrived at receiver from TEST_DEVICE')
-            received_snmp = True
-        else:
-            # Unknown SNMP sender
-            pass 
-
-    sleep(2)
-    snmp_trap_receiver_process.kill()
+    mav6_ip = MAV6_IPV4 if ip_version(TEST_DEVICE) == 4 else MAV6_IPV6
+    result = snmp_trap_client(snmp_version=2, comm_uname=COM_RW, mav6_ip=mav6_ip, 
+                              test_device_hostname=TEST_DEVICE_HOSTNAME, test_device_ip=TEST_DEVICE)
 
     # Print Test results to screen
-    if (received_snmp):
-        print(colored("SNMPv3 Trap Test Successful\n\n", "green"))
+    if (result):
+        print(colored("SNMPv2 Trap Test Successful\n\n", "green"))
     else:
-        print(colored("SNMPv3 Trap Test Failed\n\n", "red"))
+        print(colored("SNMPv2 Trap Test Failed\n\n", "red"))
 
 
 # SNMP v3 Trap Test
 if SNMPV3_TRAP:
-    if (ip_version(TEST_DEVICE) == 4):
-        mav6_ip = MAV6_IPV4
-    else:
-        mav6_ip = MAV6_IPV6
-
-    q = Queue()
-    snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
-                                        args=(q,3, mav6_ip,162,))
-
-    print('starting snmpv3 trap receiver process')
-    snmp_trap_receiver_process.start()
-    sleep(5)
-    # Below sends a test trap from mav6 to mav6 trap receiver, leave commented unless testing
-    snmp_trap_send(destination=mav6_ip, port=162, snmp_version=3)
-
-    # Configure TEST_DEVICE to send SNMP traps to trap receiver
-    device = connect_host(TEST_DEVICE_HOSTNAME, 'ssh')
-    device.configure ('snmp-server group mav6group v3 noauth\n' + \
-                        'snmp-server user mav6user mav6group v3\n' + \
-                        'snmp-server enable traps\n' + \
-                        'snmp-server host ' + mav6_ip + ' traps version 3 noauth mav6user\n'
-                        )
-    sleep(5) 
-
-    # Check the queue created by the SNMP receiver for a trap sent by TEST_DEVICE
-    received_snmp = False
-    while(not q.empty()):
-        message = q.get()
-        if('my system' in message):
-            print('SNMPv3 message arrived at receiver from snmp_trap_send') 
-        elif('netconf' in message):
-            print('SNMPv3 message arrived at receiver from TEST_DEVICE')
-            received_snmp = True
-        else:
-            # Unknown SNMP sender
-            pass 
-
-    sleep(2)
-    snmp_trap_receiver_process.kill()
+    mav6_ip = MAV6_IPV4 if ip_version(TEST_DEVICE) == 4 else MAV6_IPV6
+    result = snmp_trap_client(snmp_version=3, comm_uname=COM_RW, mav6_ip=mav6_ip, 
+                              test_device_hostname=TEST_DEVICE_HOSTNAME, test_device_ip=TEST_DEVICE)
 
     # Print Test results to screen
-    if (received_snmp):
-        print(colored("SNMPv3 Trap Test Successful\n\n", "green"))
+    if (result):
+        print(colored("SNMPv2 Trap Test Successful\n\n", "green"))
     else:
-        print(colored("SNMPv3 Trap Test Failed\n\n", "red"))
+        print(colored("SNMPv2 Trap Test Failed\n\n", "red"))
 
     
 # NTP v4 Client Test
