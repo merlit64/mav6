@@ -221,7 +221,7 @@ def snmp_trap_client(snmp_version=2, comm_uname='', mav6_ip='', test_device_host
     snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
                                          args=(q,2, mav6_ip,162,comm_uname))
 
-    print('starting snmpv2 trap receiver process')
+    print('starting snmp trap receiver process, version ' + str(snmp_version))
     snmp_trap_receiver_process.start()
     sleep(5)
     # Below sends a test trap from mav6 to mav6 trap receiver, leave commented unless testing

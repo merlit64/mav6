@@ -243,9 +243,9 @@ if SNMPV3_TRAP:
 
     # Print Test results to screen
     if (result):
-        print(colored("SNMPv2 Trap Test Successful\n\n", "green"))
+        print(colored("SNMPv3 Trap Test Successful\n\n", "green"))
     else:
-        print(colored("SNMPv2 Trap Test Failed\n\n", "red"))
+        print(colored("SNMPv3 Trap Test Failed\n\n", "red"))
 
     
 # NTP v4 Client Test
