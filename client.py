@@ -19,6 +19,7 @@ from pysnmp.proto import rfc1902
 
 # Embedded file server function import
 from embedded_fs import *
+from ca import *
 
 
 def ping_client(device = '', device_to_ping=''):
@@ -251,30 +252,38 @@ def filetransfer_client_download(device_hostname='', device_protocol='ssh',
         exit()
 
 
-def file_transfer_client(protocol='', test_device_hostname='', test_device_ip='', mav6_ipv4='', mav6_ipv6='', secured=False):
+def file_transfer_client(protocol='', test_device_hostname='', test_device_ip='', 
+                         mav6_ip='', ca_directory=''):
+    secured = True if (protocol == 'https') else False
     # Connect to test device and check for test file on flash
     device = connect_host( device=test_device_hostname, protocol='ssh')
     if(file_on_flash(device, filename='test.txt')):
         del_from_flash(device, 'test.txt')
-    if (ip_version(test_device_ip) == 4):
-        embedded_server_process = Process(target=start_server, name='tftpserver', 
-                                      args=('tftp', mav6_ipv4,))
-    else:
-        embedded_server_process = Process(target=start_server, name='tftpserver', 
-                                      args=('tftp', mav6_ipv6,))
 
+    # Create CA on Mav6 and create a signed cert for Mav6 https server
+    if secured:
+        ca_create_directory(ca_directory=ca_directory)
+        ca_create_key(ca_directory=ca_directory, key_name='rootCA')
+        ca_create_cert(ca_directory=ca_directory, key_name='rootCA', server_ip=mav6_ip)
+        ca_create_key(ca_directory=ca_directory, key_name='server')
+        ca_create_cert(ca_directory=ca_directory, key_name='server', server_ip=mav6_ip)
 
-    print('starting tftp server process')
+    embedded_server_process = Process(target=start_server, name='embeddedpserver', 
+                                    args=(protocol, mav6_ip,))
+
+    print('spawning ' + protocol + ' server process')
     embedded_server_process.start()
     sleep(5)
 
-    if (ip_version(test_device_ip) == 4):
-        filetransfer_client_download(device_hostname=test_device_hostname, device_protocol='ssh',
-                                 server_ip=mav6_ipv4, transfer_protocol=protocol)
-    else:
-        filetransfer_client_download(device_hostname=test_device_hostname, device_protocol='ssh',
-                                 server_ip=mav6_ipv6, transfer_protocol=protocol)
+    # Add a trustpoint in the router that trusts the mav6 CA
+    if secured:
+        rtr_remove_trustpoint(device)
+        rtr_add_trustpoint(device, ca_directory)
+        rtr_authenticate_rootca(device, ca_directory)
 
+    print("Attempting " + protocol + " file transfer")
+    filetransfer_client_download(device_hostname=test_device_hostname, device_protocol='ssh',
+                                server_ip=mav6_ip, transfer_protocol=protocol)
     sleep(2)
     embedded_server_process.kill()
 
