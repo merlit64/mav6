@@ -1,41 +1,4 @@
-######## MACROS ########
-
-######## HERNDON PASSWORDS ########
-#TEST_DEVICE = "10.83.16.161"
-#COM_RO = "goose_ro"
-#COM_RW = "goose_rw"
-#AUTH_KEY = "FEDciv123!"
-#PRIV_KEY = "FEDciv123!"
-#SNMP_USER = "v3user"
-#CLI_USER = "dnac"
-#USER_PASS = "FEDciv123!"
-
-
-
-####### RICHFIELD PASSWORDS ######
-TEST_DEVICE = "10.112.1.61"
-#COM_RO = "goose_ro"
-#COM_RW = "goose_rw"
-#AUTH_KEY = "C1sco123!"
-#PRIV_KEY = "C1sco123!"
-#SNMP_USER = "v3user"
-#CLI_USER = "netconf"
-#USER_PASS = "C1sco123!"
-
-
-####### Test CSR100v ######
-#TEST_DEVICE = "10.112.1.201"
-#TEST_DEVICE = "2005:1117:1:1::0A70:01C9"
-#COM_RO = "FEDcivro"
-#COM_RW = "FEDcivrw"
-#AUTH_KEY = "C1sco123!"
-#PRIV_KEY = "C1sco123!"
-#SNMP_USER = "v3user"
-#CLI_USER = "netconf"
-#USER_PASS = "C1sco123!"
-
-
-####### Mgmt Switch ######
+####### Test Device info ######
 TEST_DEVICE = "10.1.1.1"
 TEST_DEVICE = "2001:db8::1"
 TEST_DEVICE_HOSTNAME = 'test_device'
