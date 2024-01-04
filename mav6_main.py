@@ -101,11 +101,11 @@ if PING_CLIENT:
 
 # Telnet Client Test
 if TELNET_CLIENT:
-    telnet_client('C8000V', 'mgmt', REMOTE_SERVER, CLI_USER, USER_PASS)
+    telnet_client('C8000V', LOCAL_DEVICE, 'mav6b', USER_PASS)
     
 # SSH Client Test
 if SSH_CLIENT:
-    ssh_client('C8000V', 'mgmt', REMOTE_SERVER, CLI_USER, USER_PASS)
+    ssh_client('C8000V', LOCAL_DEVICE, 'mav6b', USER_PASS)
 
 # DNS Client Test
 # Linux Server
