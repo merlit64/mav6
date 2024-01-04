@@ -1,0 +1,17 @@
+devices:
+  test_device:
+    connections:
+      ssh:
+        ip: 10.1.1.1
+        protocol: ssh
+      telnet:
+        ip: 10.1.1.1
+        protocol: telnet
+    credentials:
+      default:
+        password: 'cli_password'
+        username: cli_username
+      enable:
+        password: 'cli_password'
+    os: iosxe
+    type: iosxe
