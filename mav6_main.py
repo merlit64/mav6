@@ -4,7 +4,7 @@ from time import sleep, ctime
 import os
 
 ### LOCAL FILES ###
-from secrets_1 import *
+from secrets import *
 from test_configuration import *
 from server import *
 from client import *
