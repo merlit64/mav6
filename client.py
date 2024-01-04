@@ -281,19 +281,19 @@ def filetransfer_client_download(device_hostname='', device_protocol='ssh',
 
     if (transfer_protocol == 'tftp'):
         command = 'copy tftp://' + server_ip + '/test.txt flash:/\n\n\n' 
-        connect_host(device=device_hostname, protocol='ssh', command=command)
+        connect_host(device=device_hostname, protocol=device_protocol, command=command)
         sleep(5)
     elif (transfer_protocol == 'ftp'):
         command = 'copy ftp://paul:elephant060@' + server_ip + '/test.txt flash:/\n\n\n' 
-        connect_host(device=device_hostname, protocol='ssh', command=command)
+        connect_host(device=device_hostname, protocol=device_protocol, command=command)
         sleep(5)
     elif (transfer_protocol == 'http'):
         command = 'copy http://' + server_ip + '/test.txt flash:/\n\n\n' 
-        connect_host(device=device_hostname, protocol='ssh', command=command)
+        connect_host(device=device_hostname, protocol=device_protocol, command=command)
         sleep(5)
     elif (transfer_protocol == 'https'):
         command = 'copy https://' + server_ip + '/test.txt flash:/\n\n\n' 
-        connect_host(device=device_hostname, protocol='ssh', command=command)
+        connect_host(device=device_hostname, protocol=device_protocol, command=command)
         sleep(5)
     else:
         print("File transfer protocol not supported.")
