@@ -206,7 +206,7 @@ def ca_sign_csr(csr='', hash='sha256'):
     new_cert = crypto.X509()
     new_cert.set_issuer(ca_cert.get_subject())
     new_cert.set_pubkey(csr_obj.get_pubkey())
-    new_cert.set_serial_number(1111)
+    new_cert.set_serial_number(random.randrange(100000))
     new_cert.gmtime_adj_notBefore(0)
     new_cert.gmtime_adj_notAfter(60*60*24*365*5)
     new_cert.sign(ca_key, 'sha256')
