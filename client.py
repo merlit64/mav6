@@ -49,6 +49,7 @@ def perform_ssh(device, ip_address, username, password):
         cli_command = 'exit'
         spawn.sendline(cli_command)
 
+
     dialog = Dialog([
 
             Statement(pattern=r"Password:\s*timeout expired!",
@@ -57,7 +58,7 @@ def perform_ssh(device, ip_address, username, password):
             Statement(pattern=r"Password:",
                       action=send_pass,
                       loop_continue=True),
-            Statement(pattern=r':~\$',
+            Statement(pattern=r'Welcome to Ubuntu',
                       action=ssh_pass_case,
                       loop_continue=False),
 
@@ -77,11 +78,67 @@ def perform_ssh(device, ip_address, username, password):
         return False
     if ssh_dict['ssh_pass_case_flag']:
         return True
+    
+    
+def perform_telnet(device, ip_address, username, password):
+    
+    telnet_dict = {
+                'pass_timeout_expire_flag': False,
+                'telnet_pass_case_flag': False,
+                'enable_pass_flag': False
+                }
 
-def telnet_client(hostname, server_name, server_ip, user, secret):
+    def pass_timeout_expire():
+        telnet_dict['pass_timeout_expire_flag'] = True
+
+    def send_pass(spawn):
+        spawn.sendline(password)
+        
+    def send_login(spawn):
+        spawn.sendline(username)
+
+    def telnet_pass_case(spawn):
+        telnet_dict['telnet_pass_case_flag'] = True
+        # command to exit from the active ssh session from the device prompt itself.
+        cli_command = 'exit'
+        spawn.sendline(cli_command)
+
+    dialog = Dialog([
+
+            Statement(pattern=r'Welcome to Ubuntu',
+                      action=telnet_pass_case,
+                      loop_continue=False),
+            Statement(pattern=r"Password:\s*timeout expired!",
+                      action=pass_timeout_expire,
+                      loop_continue=False),
+            Statement(pattern=r"Password:",
+                      action=send_pass,
+                      loop_continue=True),
+            Statement(pattern=r"login:",
+                      action=send_login,
+                      loop_continue=True),
+            
+    ])
+
+    cmd = f'telnet {ip_address}'
+
+    try:
+        device.execute(cmd, reply=dialog, prompt_recovery=True, timeout=40)
+
+    except Exception as e:
+        log.info(f"Error occurred while performing telnet : {e}")
+
+    if telnet_dict['pass_timeout_expire_flag']:
+        return False
+    if telnet_dict['telnet_pass_case_flag']:
+        return True
+
+
+
+def telnet_client(hostname, server_ip, user, secret):
     # telnet client test function
     device = connect_host(hostname, 'ssh')
-    if (utils.perform_telnet(device, server_name, server_ip, user, secret)):
+    if (perform_telnet(device, server_ip, user, secret)):
         print(colored('Telnet client test successful', 'green'))
     else:
         print(colored('Telnet client test failed', 'red'))
