@@ -143,7 +143,7 @@ def snmp_start_trap_receiver(q, snmp_version=2, ip='', port=162, community=''):
         print('starting snmp trap receiver v3...')
         config.addV3User(snmp_engine, 'mavuser')
         '''
-        config.addVacmUser(snmp_engine, 3, '***REMOVED***', 'authPriv', 
+        config.addVacmUser(snmp_engine, 3, 'v3user', 'authPriv', 
                            (1,3,6,1,2,1), (1,3,6,1,2,1) )
         '''
 
@@ -171,8 +171,8 @@ def snmp_trap_send(destination='', port=162, snmp_version = 2):
     if (snmp_version == 2):
         iterator = sendNotification (
             SnmpEngine(),
-            CommunityData('***REMOVED***', mpModel=0), #for version 2c
-            #UsmUserData('***REMOVED***', authKey='***REMOVED***', privKey='***REMOVED***', 
+            CommunityData('FEDcivrw', mpModel=0), #for version 2c
+            #UsmUserData('v3user', authKey='C1sco123!', privKey='C1sco123!', 
             #            authProtocol=usmHMACSHAAuthProtocol, privProtocol=usmAesCfb128Protocol),
             UdpTransportTarget((destination, port)) if ip_version(destination) == 4 else Udp6TransportTarget((destination, port)),
             #UdpTransportTarget((destination, port)),
@@ -250,7 +250,7 @@ def snmp_trap_client(snmp_version=2, comm_uname='', mav6_ip='', test_device_host
         message = q.get()
         if('my system' in message):
             print('SNMP message arrived at receiver from snmp_trap_send test function') 
-        elif('***REMOVED***' in message):
+        elif('netconf' in message):
             print('SNMP message arrived at receiver from TEST_DEVICE')
             received_snmp = True
         else:
