@@ -140,8 +140,8 @@ def render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data={}, testb
     subdirectory_count = 0
     while (testbed_filename.find('/', filename_index, len(testbed_filename)) != -1 ):
         filename_index = testbed_filename.find('/') + 1
-        testbed_directory = testbed_directory + testbed_filename[:filename_index-1]
-        testbed_filename = [filename_index:]
+        testbed_directory = testbed_directory + testbed_filename[:filename_index]
+        testbed_filename = testbed_filename[filename_index:]
         subdirectory_count+=1
 
     # del and rebuild pyATS directory and testbed.yaml

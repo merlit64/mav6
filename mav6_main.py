@@ -23,8 +23,8 @@ import ntplib
 # I.E. Telnet server test means the Test device is acting as the TFTP Server
 
 # Build pyATS Testbed environment from the secrets file configuration settings
-#testbed_data = { TEST_DEVICE=TEST_DEVICE, TEST_DEVICE_HOSTNAME=TEST_DEVICE_HOSTNAME, 
-#                 CLI_USER=CLI_USER, USER_PASS=USER_PASS}
+testbed_data = { 'TEST_DEVICE':TEST_DEVICE, 'TEST_DEVICE_HOSTNAME':TEST_DEVICE_HOSTNAME, 
+                 'CLI_USER':CLI_USER, 'USER_PASS':USER_PASS}
 #render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data=testbed_data)
 
 # Ping Server Test
