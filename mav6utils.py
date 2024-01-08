@@ -1,12 +1,36 @@
 import os
+from time import sleep
+import shutil
 import ipaddr
 from termcolor import colored
+from jinja2 import Template
+from secrets import *
 
 # pyATS
 from pyats.topology import loader
 from pyats.utils.fileutils import FileUtils
 from genie.libs.sdk.apis.iosxe import utils
 from genie.libs.sdk.apis.iosxe.ntp.configure import *
+
+TESTBED_TEMPLATE = '''
+devices:
+  {{ TEST_DEVICE_HOSTNAME }}:
+    connections:
+      ssh:
+        ip: {{ TEST_DEVICE }}
+        protocol: ssh
+      telnet:
+        ip: {{ TEST_DEVICE }}
+        protocol: telnet
+    credentials:
+      default:
+        password: '{{ USER_PASS }}'
+        username: {{ CLI_USER }}
+      enable:
+        password: '{{ USER_PASS }}'
+    os: ios_xe
+    type: ios_xe
+'''
 
 
 def ip_version(ip):
@@ -86,9 +110,56 @@ def file_on_mav(filename=''):
         return False
 
 
+def dir_on_mav(filename=''):
+    # Return True if file exists on mav6 box, False if not
+    # filename - name of the file to look for
+    if os.path.isdir(filename):
+        return True
+    else:
+        return False
+
+
 def del_from_mav(filename=''):
     # Delete this file from mav6 box
     # filename - name of file to delete
-    os.remove(filename)
+    if file_on_mav(filename):
+        os.remove(filename)
+        return 0
+    elif dir_on_mav(filename):
+        shutil.rmtree(filename)
+        return 0
+    else:
+        return 1
 
 
+def render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data={}, testbed_template=TESTBED_TEMPLATE):
+
+    #split testbed_filename up into 2 strings, one containing the directory, the other the filename
+    testbed_directory = ''
+    filename_index = 0
+    subdirectory_count = 0
+    while (testbed_filename.find('/', filename_index, len(testbed_filename)) != -1 ):
+        filename_index = testbed_filename.find('/') + 1
+        testbed_directory = testbed_directory + testbed_filename[:filename_index-1]
+        testbed_filename = [filename_index:]
+        subdirectory_count+=1
+
+    # del and rebuild pyATS directory and testbed.yaml
+    if dir_on_mav(testbed_directory):
+        del_from_mav(testbed_directory)
+    sleep(1)
+    os.mkdir(testbed_directory)
+    os.chdir(testbed_directory)
+
+    # Render the pyATS YAML file
+    t = Template(testbed_template)
+    testbed_yaml = t.render(TEST_DEVICE = TEST_DEVICE, TEST_DEVICE_HOSTNAME = TEST_DEVICE_HOSTNAME, CLI_USER = CLI_USER, USER_PASS=USER_PASS)
+
+    # Save the YAML file
+    yaml_file = open(testbed_filename, 'w')
+    yaml_file.write(testbed_yaml)
+    yaml_file.close()
+
+    while(subdirectory_count != 0):
+        subdirectory_count-=1
+        os.chdir('..')
