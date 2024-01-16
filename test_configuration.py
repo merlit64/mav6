@@ -25,9 +25,9 @@ SNMPV2_TRAP = False
 SNMPV3_TRAP = False
 NTP_CLIENT = True
 
-# Local Servers available for client tests
+# Local directories and files built
+# No need to change these parameters typically
 PYATS_TESTBED = 'pyATS/testbed.yaml'
-LOCAL_DEVICE = '10.1.1.1'
 CA_DIRECTORY = 'keys_and_certs'
 CA_CERT_NAME = 'rootCA'
 

@@ -102,15 +102,15 @@ mav6_ip = MAV6_IPV4 if ip_version(TEST_DEVICE) == 4 else MAV6_IPV6
 
 # Ping Client Test
 if PING_CLIENT:
-    ping_client('mgmt', device_to_ping=LOCAL_DEVICE)
+    ping_client('mgmt', device_to_ping=mav6_ip)
 
 # Telnet Client Test
 if TELNET_CLIENT:
-    telnet_client('C8000V', LOCAL_DEVICE, 'mav6b', USER_PASS)
+    telnet_client('C8000V', mav6_ip, 'mav6b', USER_PASS)
     
 # SSH Client Test
 if SSH_CLIENT:
-    ssh_client('C8000V', LOCAL_DEVICE, 'mav6b', USER_PASS)
+    ssh_client('C8000V', mav6_ip, 'mav6b', USER_PASS)
 
 # DNS Client Test
 # Linux Server
