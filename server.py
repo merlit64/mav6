@@ -1,3 +1,4 @@
+from time import ctime
 from mav6utils import *
 from termcolor import colored
 import requests
@@ -12,6 +13,9 @@ from pysnmp.entity.rfc3413 import ntfrcv, context, cmdrsp
 from pysnmp.proto import rfc1902
 
 from tftpy import TftpClient
+
+# for NTP test
+import ntplib
 
 
 def ping_host(ip):
@@ -33,10 +37,10 @@ def http_test(ip= '', verify = True):
     # verify - uses HTTPS if set to false
     try:
         ip2 = ipaddr.IPAddress(ip)
-        print(colored(("IP address is good.  Version is IPv%s" % ip2.version), "green"))
+        print("IP address is good.  Version is IPv%s.  Building URL..." % ip2.version)
     except:
         # This is not an IPv4 or an IPv6 address
-        print(colored("IP address is malformed... Exiting", "red"))
+        print("IP address is malformed... Exiting")
         exit()
     
     if verify:
@@ -49,33 +53,13 @@ def http_test(ip= '', verify = True):
     else:
         url = http_string + ip2.compressed
         
-    r = requests.get(url, verify = verify)
-    code = r.status_code
-    if code == 200:
-        print(colored((http_print + " Test Successful (Status code 200)\n"), "green"))
-    else:
-        print(colored((http_print + " Test Failed (Status code " + code + ")\n"), "red"))
-
-
-class Udp6TransportTarget(UdpTransportTarget):
-    # SNMP over IPv6 tweaks
-    transportDomain = udp6.domainName
-
-    def __init__(self, transportAddr, timeout=1, retries=5, tagList=b'', iface=''):
-        self.transportAddr = (
-            socket.getaddrinfo(transportAddr[0], transportAddr[1],
-                               socket.AF_INET6,
-                               socket.SOCK_DGRAM,
-                               socket.IPPROTO_UDP)[0][4]
-            )
-        self.timeout = timeout
-        self.retries = retries
-        self.tagList = tagList
-        self.iface = iface
-
-    def openClientMode(self):
-        self.transport = udp6.Udp6SocketTransport().openClientMode()
-        return self.transport
+    try:
+        r = requests.get(url, verify = verify)
+        code = r.status_code
+    except:
+        code = 0
+    
+    return str(code)
     
 def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = "v2", action = "read", 
               community="public", userName=None, authKey=None, privKey=None,  
@@ -136,34 +120,29 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
 
     # Display error or Success messages
     if errorIndication:  # SNMP engine errors
-        print(colored("SNMP" + version + " " + action + " Failed.  Error message:", "red"))
-        print(errorIndication)
+        #print(colored("SNMP" + version + " " + action + " Failed.  Error message:", "red"))
+        #print(errorIndication)
+        return False
     else:
         if errorStatus:  # SNMP agent errors
-            print(colored("SNMP" + version + " " + action + " Failed.  Error message:", "red"))
-            print('%s at %s' % (errorStatus.prettyPrint(), varBinds[int(errorIndex)-1] if errorIndex else '?'))
+            #print(colored("SNMP" + version + " " + action + " Failed.  Error message:", "red"))
+            #print('%s at %s' % (errorStatus.prettyPrint(), varBinds[int(errorIndex)-1] if errorIndex else '?'))
+            return False
         else:
             for varBind in varBinds:  # SNMP response contents
-                print(colored("SNMP" + version + " " + action + " Succeeded!.  Results are below:", "green"))
-                print(' = '.join([x.prettyPrint() for x in varBind]))
-    print('\n')
-    return 1
+                #print(colored("SNMP" + version + " " + action + " Succeeded!.  Results are below:", "green"))
+                #print(' = '.join([x.prettyPrint() for x in varBind]))
+                return True
 
 
-def tftp_server_download( ip, port=69, filename='test.cfg' ):
+def tftpscp_server_download( ip, port=69, filename='test.cfg', username='', password='' ):
     # From the test subjects perspective
     # The test device acts as a tftp server 
     # mav6 tries to download a file from the test subject tftp server.
     #
     # ip - ip address of the test device where tftp-server runs
-    # port - udp port of the tftp server
+    # port - udp port of the tftp server, if 443 then use scp
     # filename - the file name to download from the test device
-    if ( ip_version(ip) == 4 ):
-        print(colored("Attempting TFTP download via IPv4", "yellow"))        
-        client = TftpClient(ip, port)
-    else:
-        print(colored("Attempting TFTP download via IPv6", "yellow"))
-        client = TftpClient(ip, port, af_family=socket.AF_INET6 )
 
     try:
         # CHECK HERE TO SEE IF FILE IS ALREADY LOCAL
@@ -173,13 +152,33 @@ def tftp_server_download( ip, port=69, filename='test.cfg' ):
             sleep(1)
         else:
             print("tftp test download file does not exist locally... continuing")
-        client.download(filename, filename)
-        # CHECK HERE TO SEE IF FILE IS LOCAL
-        if file_on_mav(filename):
-            print(colored("TFTP Download success!!!", "green"))
-        else:
-            print(colored("TFTP Download failed", "red"))
     except:
         print(colored("TFTP Download failed", "red"))
 
+    if ( port == 443): # SCP over v4 or v6
+        command = 'sshpass -p "' + password + '" scp ' + username + '@[' + ip + ']:flash:/from_testdevice.txt from_testdevice.txt'
+        os.system(command)
+    elif ( ip_version(ip) == 4 and port != 443): # TFP over v4
+        client = TftpClient(ip, port)
+        client.download(filename, filename)
+    elif (ip_version(ip) == 6 and port != 443):
+        client = TftpClient(ip, port, af_family=socket.AF_INET6 )
+        client.download(filename, filename)
+    else:
+        return False
 
+    # CHECK HERE TO SEE IF FILE IS LOCAL
+    if file_on_mav(filename):
+        return True
+    else:
+        return False
+
+def ntp_call(ip=''):
+    c = ntplib.NTPClient()
+    try:
+        response = c.request(ip, version = 4)
+    except:
+        return False
+        
+    print("NTP TIME IS " + ctime(response.tx_time) + " FROM NTP SERVER " + ip)
+    return True

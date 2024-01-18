@@ -25,9 +25,12 @@ from ca import *
 def ping_client(device = '', device_to_ping=''):
     # ping_client connects to the test device and tries to ping an
     #   ip address from there.
-    device = connect_host(device, 'ssh')
-    print(colored(('Attempting ping client test...'), 'yellow'))
-    print(device.ping(device_to_ping))
+    ping_result = device.ping(device_to_ping)
+    print(ping_result)
+    if ('!!!!' in ping_result ):
+        return True
+    else:
+        return False
 
 def perform_ssh(device, ip_address, username, password):
     
@@ -135,35 +138,33 @@ def perform_telnet(device, ip_address, username, password):
 
 
 
-def telnet_client(hostname, server_ip, user, secret):
+def telnet_client(device, server_ip, user, secret):
     # telnet client test function
-    device = connect_host(hostname, 'ssh')
     if (perform_telnet(device, server_ip, user, secret)):
-        print(colored('Telnet client test successful', 'green'))
+        return True
     else:
-        print(colored('Telnet client test failed', 'red'))
+        return False
 
 
-def ssh_client(hostname, server_ip, user, secret):
+def ssh_client(device, server_ip, user, secret):
     # ssh client test function
-    device = connect_host(hostname, 'ssh')
     if (perform_ssh(device, server_ip, user, secret)):
-        print(colored('SSH client test successful', 'green'))
+        return True
     else:
-        print(colored('SSH client test failed', 'red'))
+        return False
         
-def ntp_client(hostname, ntp_server=''):
-    device = connect_host(hostname, 'ssh', log_stdout=True)
+def ntp_client(device='', ntp_server=''):
     
     ntp_config = [ntp_server]
     print(colored('Attempting NTP server configuration...', 'yellow'))
     configure_ntp_server(device, ntp_config)
     output = device.execute("show run | include ntp")
     if (len(output) == 0):
-        print(colored('NTP server configuration failed', 'red'))
+        return False
     else:
         message = 'NTP server configuration passed: ' + output
         print(colored(message, 'green'))
+        return True
     
 
 def snmp_start_trap_receiver(q, snmp_version=2, ip='', port=162, community=''):
@@ -272,7 +273,7 @@ def snmp_trap_send(destination='', port=162, snmp_version = 2):
     if(errorIndication):
         print(errorIndication)
 
-def snmp_trap_client(snmp_version=2, comm_uname='', mav6_ip='', test_device_hostname='', test_device_ip='' ):
+def snmp_trap_client(snmp_version=2, comm_uname='', mav6_ip='', device='' ):
 
     q = Queue()
     snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
@@ -285,7 +286,6 @@ def snmp_trap_client(snmp_version=2, comm_uname='', mav6_ip='', test_device_host
     #snmp_trap_send(destination=mav6_ip, port=162, snmp_version=snmp_version)
     
     # Configure TEST_DEVICE to send SNMP traps to trap receiver
-    device = connect_host(test_device_hostname, 'ssh')
     if snmp_version == 2:
         device.configure ('snmp-server host ' + mav6_ip + ' traps version 2c ' + comm_uname + \
                           ' udp-port 162 config\n' )
@@ -321,14 +321,12 @@ def snmp_trap_client(snmp_version=2, comm_uname='', mav6_ip='', test_device_host
 
 
 
-def filetransfer_client_download(device_hostname='', device_protocol='ssh',
-                                 server_ip='', transfer_protocol='tftp'):
+def filetransfer_client_download(device='', server_ip='', transfer_protocol='tftp'):
     # From the test subjects perspective
     # The test device acts as a tftp, ftp or http(s) client 
     # The test subject tries to download a file from mav6 embedded server.
     #
-    # device_hostname - use this to connect to the device with connect_host function (pyats)
-    # device_protocol - the protocol used to connect to the test device ssh or telnet
+    # device - pyats device
     # server_ip - the ip address of the embedded mav6 server (tftp, ftp, http, etc)
     # transfer_protocol - file transfer protocol to test, tftp (ftp, scp, http, etc)
 
@@ -338,30 +336,28 @@ def filetransfer_client_download(device_hostname='', device_protocol='ssh',
 
     if (transfer_protocol == 'tftp'):
         command = 'copy tftp://' + server_ip + '/test.txt flash:/\n\n\n' 
-        connect_host(device=device_hostname, protocol=device_protocol, command=command)
+        device.execute(command)
         sleep(5)
     elif (transfer_protocol == 'ftp'):
         command = 'copy ftp://paul:elephant060@' + server_ip + '/test.txt flash:/\n\n\n' 
-        connect_host(device=device_hostname, protocol=device_protocol, command=command)
+        device.execute(command)
         sleep(5)
     elif (transfer_protocol == 'http'):
         command = 'copy http://' + server_ip + '/test.txt flash:/\n\n\n' 
-        connect_host(device=device_hostname, protocol=device_protocol, command=command)
+        device.execute(command)
         sleep(5)
     elif (transfer_protocol == 'https'):
         command = 'copy https://' + server_ip + '/test.txt flash:/\n\n\n' 
-        connect_host(device=device_hostname, protocol=device_protocol, command=command)
+        device.execute(command)
         sleep(5)
     else:
         print("File transfer protocol not supported.")
         exit()
 
 
-def file_transfer_client(protocol='', test_device_hostname='', test_device_ip='', 
+def file_transfer_client(protocol='', device='', 
                          mav6_ip='', ca_directory=''):
     secured = True if (protocol == 'https') else False
-    # Connect to test device and check for test file on flash
-    device = connect_host( device=test_device_hostname, protocol='ssh')
     if(file_on_flash(device, filename='test.txt')):
         del_from_flash(device, 'test.txt')
 
@@ -387,8 +383,8 @@ def file_transfer_client(protocol='', test_device_hostname='', test_device_ip=''
         rtr_authenticate_rootca(device, ca_directory)
 
     print("Attempting " + protocol + " file transfer")
-    filetransfer_client_download(device_hostname=test_device_hostname, device_protocol='ssh',
-                                server_ip=mav6_ip, transfer_protocol=protocol)
+    filetransfer_client_download(device=device, server_ip=mav6_ip, 
+                                 transfer_protocol=protocol)
     sleep(2)
     embedded_server_process.kill()
 

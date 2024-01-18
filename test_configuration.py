@@ -1,5 +1,5 @@
 # Server Tests
-PING_SERVER = False
+PING_SERVER = True
 TELNET_SERVER = False
 SSH_SERVER = False
 SCP_SERVER = False
@@ -14,8 +14,8 @@ NTP_SERVER = False
 
 # Client Tests
 PING_CLIENT = True
-TELNET_CLIENT = True
-SSH_CLIENT = True
+TELNET_CLIENT = False
+SSH_CLIENT = False
 SCP_CLIENT = False
 TFTP_CLIENT = False
 FTP_CLIENT = False
@@ -23,7 +23,7 @@ HTTP_CLIENT = False
 HTTPS_CLIENT = False
 SNMPV2_TRAP = False
 SNMPV3_TRAP = False
-NTP_CLIENT = True
+NTP_CLIENT = False
 
 # Local directories and files built
 # No need to change these parameters typically

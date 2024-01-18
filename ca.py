@@ -8,6 +8,7 @@ from OpenSSL import SSL, crypto
 from pyats.topology import loader
 from pyats.utils.fileutils import FileUtils
 from genie.libs.sdk.apis.iosxe import utils
+from genie.libs.sdk.apis.iosxe.pki.configure import *
 from genie.libs.sdk.apis.iosxe.ntp.configure import *
 
 

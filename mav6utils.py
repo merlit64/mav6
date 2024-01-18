@@ -13,8 +13,21 @@ from genie.libs.sdk.apis.iosxe import utils
 from genie.libs.sdk.apis.iosxe.ntp.configure import *
 
 TESTBED_TEMPLATE = '''
+testbed:
+  name: mav6tb
+  
 devices:
   {{ TEST_DEVICE_HOSTNAME }}:
+    os: ios_xe
+    type: c8000v
+    platform: c8000v
+    credentials:
+      default:
+        password: '{{ CLI_PASS }}'
+        username: {{ CLI_USER }}
+      enable:
+        password: '{{ CLI_PASS }}'
+        username: {{ CLI_USER }}
     connections:
       ssh:
         ip: {{ TEST_DEVICE }}
@@ -22,14 +35,6 @@ devices:
       telnet:
         ip: {{ TEST_DEVICE }}
         protocol: telnet
-    credentials:
-      default:
-        password: '{{ USER_PASS }}'
-        username: {{ CLI_USER }}
-      enable:
-        password: '{{ USER_PASS }}'
-    os: ios_xe
-    type: ios_xe
 '''
 
 
@@ -64,7 +69,7 @@ def connect_host(device = '', protocol = '', command = ' '):
         dev = testbed.devices[device]
         dev.connect(via = protocol, log_stdout=False)
     except:
-        return Null, Null
+        return None
     
     if (not command.isspace()):
         dev.configure('file prompt quiet')
@@ -153,7 +158,7 @@ def render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data={}, testb
 
     # Render the pyATS YAML file
     t = Template(testbed_template)
-    testbed_yaml = t.render(TEST_DEVICE = TEST_DEVICE, TEST_DEVICE_HOSTNAME = TEST_DEVICE_HOSTNAME, CLI_USER = CLI_USER, USER_PASS=USER_PASS)
+    testbed_yaml = t.render(TEST_DEVICE = TEST_DEVICE, TEST_DEVICE_HOSTNAME = TEST_DEVICE_HOSTNAME, CLI_USER = CLI_USER, CLI_PASS=CLI_PASS)
 
     # Save the YAML file
     yaml_file = open(testbed_filename, 'w')
