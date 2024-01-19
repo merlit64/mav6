@@ -8,10 +8,13 @@ SNMP_USER = "v3_username"
 COM_RO = "snmp_ro"
 COM_RW = "snmp_rw"
 CLI_USER = "cli_username"
-USER_PASS = "cli_password"
+CLI_PASS = "cli_password"
 
 ####### MAV6 Server INFO #######
 # IPv4 and IPv6  address of the Mav6 server
 # Note: First release only supports Ubuntu
-MAV6_IPV4 = "10.112.1.106"
-MAV6_IPV6 = "2005:1117:1:1:3325:e920:cf17:bcee"
+MAV6_IPV4 = "10.1.1.2"
+MAV6_IPV6 = "2001:db8::2"
+MAV6_USER = "mav6"
+MAV6_PASS = "C1sco123!"
+NTP_TEST_SERVER = "10.1.1.1"
