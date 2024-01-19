@@ -11,6 +11,8 @@ from genie.libs.sdk.apis.iosxe import utils
 from genie.libs.sdk.apis.iosxe.pki.configure import *
 from genie.libs.sdk.apis.iosxe.ntp.configure import *
 
+from secrets import *
+from test_configuration import *
 
 
 def ca_create_directory(ca_directory = '', overwrite=True):
@@ -169,19 +171,29 @@ def rtr_authenticate_rootca(device='', ca_directory=''):
         rootCA = fileptr.read()
 
     # Remove the BEGIN CERT and END CERT lines, as the router does not expect them
-    rootCA = rootCA.replace('-----BEGIN CERTIFICATE-----\n', '')
-    rootCA = rootCA.replace('-----END CERTIFICATE-----\n', '\n\n')   
-
+    #rootCA = rootCA.replace('-----BEGIN CERTIFICATE-----\n', '')
+    #rootCA = rootCA.replace('-----END CERTIFICATE-----\n', '')   
+    rootCA = rootCA.rstrip('\n')
+    #rootCA = rootCA + '\nquit\n'
     # Execute the certificate authentication I dont know why it fails the first time, but suceeds the 2nd time
-    try:
-        device.api.configure_pki_authenticate_certificate(certificate=rootCA, 
-                                                          label_name='MAV6-TP')
-    except:
-        sleep(4)
-        device.api.configure_pki_authenticate_certificate(certificate=rootCA, 
-                                                          label_name='MAV6-TP')
-    sleep(2)
-
+    counter = 10
+    cert_configured = False
+    #tb = loader.load(PYATS_TESTBED)
+    #dev2 = tb.devices[TEST_DEVICE_HOSTNAME]
+    #dev2.connect(via='ssh')
+    #sleep(2)
+    while(counter>0 and cert_configured == False):
+        try:
+            device.api.configure_pki_authenticate_certificate(certificate=rootCA, 
+                                                            label_name='MAV6-TP')
+        except:
+            sleep(1)
+            #tp_list = device.execute('show crypto pki trustpoint')
+            counter -= 1
+        else:
+            sleep(2)
+            # cert_configured = True
+            counter -= 1
 
 ###########################
 

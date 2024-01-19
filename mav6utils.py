@@ -18,9 +18,9 @@ testbed:
   
 devices:
   {{ TEST_DEVICE_HOSTNAME }}:
-    os: ios_xe
-    type: c8000v
-    platform: c8000v
+    os: iosxe
+    type: c9000
+    platform: c9000
     credentials:
       default:
         password: '{{ CLI_PASS }}'
@@ -32,6 +32,10 @@ devices:
       ssh:
         ip: {{ TEST_DEVICE }}
         protocol: ssh
+        settings:
+          #init_exec_commands: True
+          #init_config_commands: True
+          log_stdout: False
       telnet:
         ip: {{ TEST_DEVICE }}
         protocol: telnet

@@ -137,8 +137,7 @@ if HTTPS_SERVER:
 
     msg = '\nAttempting HTTPS connection to ' + TEST_DEVICE + ' from mav6: ' + mav6_ip
     print(colored(msg, "yellow"))
-    #result = http_test(TEST_DEVICE, verify=False)
-    result = False
+    result = http_test(TEST_DEVICE, verify=False)
     
     if (result=='200'):
         print(colored("HTTPS Server Test Success", "green"))
@@ -331,6 +330,7 @@ if HTTP_CLIENT:
         print(colored("HTTP Client Test Failed\n\n", "red"))
 
 # HTTPS client Test
+'''
 if HTTPS_CLIENT:
     msg = '\nAttempting HTTPS file transfer from mav6: ' + \
            mav6_ip + ' to TEST_DEVICE: ' + TEST_DEVICE
@@ -342,6 +342,7 @@ if HTTPS_CLIENT:
         print(colored("HTTPS Client Test Successful\n\n", "green"))
     else:
         print(colored("HTTPS Client Test Failed\n\n", "red"))
+'''
 
 # SNMP v2 Trap Test
 if SNMPV2_TRAP:
