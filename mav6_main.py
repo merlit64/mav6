@@ -194,7 +194,7 @@ if SNMPV3_READ:
     print(colored(msg, "yellow"))
 
     result = snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "read", 
-          userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
+          userName='mav6user', authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
     if (result):
         print(colored("SNMP V3 Read Test Success", "green"))
@@ -220,7 +220,7 @@ if SNMPV3_WRITE:
     print(colored(msg, "yellow"))
 
     result = snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, mib_value="mav6", version = "v3", action = "write", 
-          userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
+          userName='mav6user', authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
     if (result):
         print(colored("SNMP V3 Write Test Success", "green"))

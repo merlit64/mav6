@@ -120,8 +120,8 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
 
     # Display error or Success messages
     if errorIndication:  # SNMP engine errors
-        #print(colored("SNMP" + version + " " + action + " Failed.  Error message:", "red"))
-        #print(errorIndication)
+        print(colored("SNMP" + version + " " + action + " Failed.  Error message:", "red"))
+        print(errorIndication)
         return False
     else:
         if errorStatus:  # SNMP agent errors
