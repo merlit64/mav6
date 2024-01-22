@@ -68,10 +68,14 @@ def connect_host(device = '', protocol = '', command = ' '):
     # device - hostname of device being tested
     # protocol - connection protocol being tested (telnet or ssh)
     # command - command used to test connection
-    testbed = loader.load('pyATS/testbed.yaml')
+    #testbed = loader.load('pyATS/testbed.yaml')
+    start1 = protocol + ' ' + '10.112.1.205'
+    credentials = {'default': {'username': 'netconf', 'password': 'C1sco123!'},
+                    'enable': {'username': 'netconf', 'password': 'C1sco123!'}}
     try:
-        dev = testbed.devices[device]
-        dev.connect(via = protocol, log_stdout=False)
+        #dev = testbed.devices[device]
+        dev = Connection(hostname=device, start=[start1], credentials=credentials )
+        dev.connect(log_stdout=False)
     except:
         return None
     
