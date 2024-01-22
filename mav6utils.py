@@ -13,32 +13,23 @@ from genie.libs.sdk.apis.iosxe import utils
 from genie.libs.sdk.apis.iosxe.ntp.configure import *
 
 TESTBED_TEMPLATE = '''
-testbed:
-  name: mav6tb
-  
 devices:
   {{ TEST_DEVICE_HOSTNAME }}:
-    os: iosxe
-    type: c9000
-    platform: c9000
-    credentials:
-      default:
-        password: '{{ CLI_PASS }}'
-        username: {{ CLI_USER }}
-      enable:
-        password: '{{ CLI_PASS }}'
-        username: {{ CLI_USER }}
     connections:
       ssh:
         ip: {{ TEST_DEVICE }}
         protocol: ssh
-        settings:
-          #init_exec_commands: True
-          #init_config_commands: True
-          log_stdout: False
       telnet:
         ip: {{ TEST_DEVICE }}
         protocol: telnet
+    credentials:
+      default:
+        password: '{{ USER_PASS }}'
+        username: {{ CLI_USER }}
+      enable:
+        password: '{{ USER_PASS }}'
+    os: ios_xe
+    type: ios_xe
 '''
 
 
@@ -68,16 +59,12 @@ def connect_host(device = '', protocol = '', command = ' '):
     # device - hostname of device being tested
     # protocol - connection protocol being tested (telnet or ssh)
     # command - command used to test connection
-    #testbed = loader.load('pyATS/testbed.yaml')
-    start1 = protocol + ' ' + '10.112.1.205'
-    credentials = {'default': {'username': 'netconf', 'password': 'C1sco123!'},
-                    'enable': {'username': 'netconf', 'password': 'C1sco123!'}}
+    testbed = loader.load('pyATS/testbed.yaml')
     try:
-        #dev = testbed.devices[device]
-        dev = Connection(hostname=device, start=[start1], credentials=credentials )
-        dev.connect(log_stdout=False)
+        dev = testbed.devices[device]
+        dev.connect(via = protocol, log_stdout=False)
     except:
-        return None
+        return Null, Null
     
     if (not command.isspace()):
         dev.configure('file prompt quiet')
@@ -166,7 +153,7 @@ def render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data={}, testb
 
     # Render the pyATS YAML file
     t = Template(testbed_template)
-    testbed_yaml = t.render(TEST_DEVICE = TEST_DEVICE, TEST_DEVICE_HOSTNAME = TEST_DEVICE_HOSTNAME, CLI_USER = CLI_USER, CLI_PASS=CLI_PASS)
+    testbed_yaml = t.render(TEST_DEVICE = TEST_DEVICE, TEST_DEVICE_HOSTNAME = TEST_DEVICE_HOSTNAME, CLI_USER = CLI_USER, USER_PASS=USER_PASS)
 
     # Save the YAML file
     yaml_file = open(testbed_filename, 'w')
