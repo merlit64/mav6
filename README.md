@@ -73,6 +73,14 @@ sudo apt install git
 sudo apt install sshpass (for scp tests)
 sudo apt install openssh-server (for ssh tests)
 sudo apt install telnetd (for telnet tests)
+
+To enable ubuntu telnet server for ipv6, as well as default ipv4 support:
+sudo vi /etc/inetd.conf
+copy the line that start with "telnet     stream     tcp" and paste it below the existing line
+change tcp to tcp6
+save and quit
+systemctl restart inetd
+
 Install VS Code or IDE of choice?
 sudo snap install --classic code
 
