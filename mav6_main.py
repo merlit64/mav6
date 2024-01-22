@@ -24,6 +24,8 @@ from termcolor import colored
 testbed_data = { 'TEST_DEVICE':TEST_DEVICE, 'TEST_DEVICE_HOSTNAME':TEST_DEVICE_HOSTNAME, 
                  'CLI_USER':CLI_USER, 'CLI_PASS':CLI_PASS}
 render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data=testbed_data)
+
+print(colored('\n\nInitiating TEST_DEVICE connection (approx 30s)', "yellow"))
 device = connect_host(TEST_DEVICE_HOSTNAME, 'ssh')
 mav6_ip = MAV6_IPV4 if ip_version(TEST_DEVICE) == 4 else MAV6_IPV6
 
@@ -182,8 +184,8 @@ if SNMPV3_READ:
     device.configure('no snmp-server user mav6user mav6group v3')
     device.configure('no snmp-server group mav6group v3 priv')
     device.configure('snmp-server group mav6group v3 priv')
-    command = 'snmp-server user mav6user mav6group v3 auth sha ' + AUTH_KEY + \
-               ' priv aes 128 ' + PRIV_KEY
+    command = 'snmp-server user ' + SNMP_USER + ' mav6group v3 auth sha ' + \
+                AUTH_KEY + ' priv aes 128 ' + PRIV_KEY
     device.configure(command)
     #device.configure('snmp-server enable traps')
     #device.configure('snmp-server enable traps config')
@@ -194,7 +196,7 @@ if SNMPV3_READ:
     print(colored(msg, "yellow"))
 
     result = snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "read", 
-          userName='mav6user', authKey=AUTH_KEY, privKey=PRIV_KEY  )
+          userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
     if (result):
         print(colored("SNMP V3 Read Test Success", "green"))
@@ -208,8 +210,8 @@ if SNMPV3_WRITE:
     device.configure('no snmp-server group mav6group v3 priv')
     device.configure('snmp-server view v3view iso included')
     device.configure('snmp-server group mav6group v3 priv write v3view')
-    command = 'snmp-server user mav6user mav6group v3 auth sha ' + AUTH_KEY + \
-               ' priv aes 128 ' + PRIV_KEY
+    command = 'snmp-server user ' + SNMP_USER + ' mav6group v3 auth sha ' + \
+                AUTH_KEY + ' priv aes 128 ' + PRIV_KEY
     device.configure(command)
     #device.configure('snmp-server enable traps')
     #device.configure('snmp-server enable traps config')
@@ -220,7 +222,7 @@ if SNMPV3_WRITE:
     print(colored(msg, "yellow"))
 
     result = snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, mib_value="mav6", version = "v3", action = "write", 
-          userName='mav6user', authKey=AUTH_KEY, privKey=PRIV_KEY  )
+          userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
     if (result):
         print(colored("SNMP V3 Write Test Success", "green"))
@@ -330,7 +332,7 @@ if HTTP_CLIENT:
         print(colored("HTTP Client Test Failed\n\n", "red"))
 
 # HTTPS client Test
-'''
+
 if HTTPS_CLIENT:
     msg = '\nAttempting HTTPS file transfer from mav6: ' + \
            mav6_ip + ' to TEST_DEVICE: ' + TEST_DEVICE
@@ -342,7 +344,6 @@ if HTTPS_CLIENT:
         print(colored("HTTPS Client Test Successful\n\n", "green"))
     else:
         print(colored("HTTPS Client Test Failed\n\n", "red"))
-'''
 
 # SNMP v2 Trap Test
 if SNMPV2_TRAP:

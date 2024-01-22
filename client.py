@@ -330,25 +330,35 @@ def filetransfer_client_download(device='', server_ip='', transfer_protocol='tft
     # server_ip - the ip address of the embedded mav6 server (tftp, ftp, http, etc)
     # transfer_protocol - file transfer protocol to test, tftp (ftp, scp, http, etc)
 
-    # First connect to the test device
+    # Put brackets around ipv6 address
     if ( ip_version(server_ip) == 6 ):
         server_ip = '[' + server_ip + ']'
 
+    # setup dialog
+    def dest_filename_request(spawn):
+        spawn.sendline('')
+    dialog = Dialog([
+        Statement(pattern=r"Destination filename",
+                  action=dest_filename_request,
+                  loop_continue=True)
+    ])
+    
+    # send copy command
     if (transfer_protocol == 'tftp'):
-        command = 'copy tftp://' + server_ip + '/test.txt flash:/\n\n\n' 
-        device.execute(command)
+        cmd = 'copy tftp://' + server_ip + '/test.txt flash:/test.txt' 
+        device.execute(cmd, reply=dialog, prompt_recovery=True, timeout=40)
         sleep(5)
     elif (transfer_protocol == 'ftp'):
-        command = 'copy ftp://paul:elephant060@' + server_ip + '/test.txt flash:/\n\n\n' 
-        device.execute(command)
+        cmd = 'copy ftp://paul:elephant060@' + server_ip + '/test.txt flash:/' 
+        device.execute(cmd, reply=dialog, prompt_recovery=True, timeout=40)
         sleep(5)
     elif (transfer_protocol == 'http'):
-        command = 'copy http://' + server_ip + '/test.txt flash:/\n\n\n' 
-        device.execute(command)
+        cmd = 'copy http://' + server_ip + '/test.txt flash:/' 
+        device.execute(cmd, reply=dialog, prompt_recovery=True, timeout=40)
         sleep(5)
     elif (transfer_protocol == 'https'):
-        command = 'copy https://' + server_ip + '/test.txt flash:/\n\n\n' 
-        device.execute(command)
+        cmd = 'copy https://' + server_ip + '/test.txt flash:/' 
+        device.execute(cmd, reply=dialog, prompt_recovery=True, timeout=40)
         sleep(5)
     else:
         print("File transfer protocol not supported.")

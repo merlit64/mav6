@@ -156,13 +156,17 @@ def tftpscp_server_download( ip, port=69, filename='test.cfg', username='', pass
         print(colored("TFTP Download failed", "red"))
 
     if ( port == 443): # SCP over v4 or v6
-        command = 'sshpass -p "' + password + '" scp ' + username + '@[' + ip + ']:flash:/from_testdevice.txt from_testdevice.txt'
+        print('attempting scp download from test device at ' + ip)
+        command = 'sshpass -p "' + password + '" scp ' + username + \
+            '@[' + ip + ']:flash:/from_testdevice.txt from_testdevice.txt'
         os.system(command)
     elif ( ip_version(ip) == 4 and port != 443): # TFP over v4
         client = TftpClient(ip, port)
+        print('attempting tftp download from test device at ' + ip)
         client.download(filename, filename)
     elif (ip_version(ip) == 6 and port != 443):
         client = TftpClient(ip, port, af_family=socket.AF_INET6 )
+        print('attempting tftp download from test device at ' + ip)
         client.download(filename, filename)
     else:
         return False

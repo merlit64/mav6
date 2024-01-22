@@ -1,4 +1,5 @@
 import os
+import inspect
 import shutil
 import random
 from time import sleep
@@ -88,7 +89,7 @@ def ca_create_cert(ca_directory='', key_name='', server_ip=''):
     cert.get_subject().emailAddress = 'mav6@cisco.com'
     cert.set_serial_number(random.randrange(100000))
     cert.set_version(2)
-    cert.gmtime_adj_notBefore(0)
+    cert.gmtime_adj_notBefore(-(60*60*24*7))
     cert.gmtime_adj_notAfter(60*50*24*365*8)
     cert.set_pubkey(server_pub_key)
     if (key_name != 'rootCA'):
@@ -128,6 +129,7 @@ def ca_create_cert(ca_directory='', key_name='', server_ip=''):
         with open('rootCA.fpt', 'w+') as f:
             f.writelines(fingerprint)
     os.chdir('..')
+    return cert
 
     
 def rtr_remove_trustpoint(device=''):
@@ -170,18 +172,10 @@ def rtr_authenticate_rootca(device='', ca_directory=''):
     with open(filename) as fileptr:
         rootCA = fileptr.read()
 
-    # Remove the BEGIN CERT and END CERT lines, as the router does not expect them
-    #rootCA = rootCA.replace('-----BEGIN CERTIFICATE-----\n', '')
-    #rootCA = rootCA.replace('-----END CERTIFICATE-----\n', '')   
     rootCA = rootCA.rstrip('\n')
-    #rootCA = rootCA + '\nquit\n'
-    # Execute the certificate authentication I dont know why it fails the first time, but suceeds the 2nd time
-    counter = 10
+    counter = 3
     cert_configured = False
-    #tb = loader.load(PYATS_TESTBED)
-    #dev2 = tb.devices[TEST_DEVICE_HOSTNAME]
-    #dev2.connect(via='ssh')
-    #sleep(2)
+
     while(counter>0 and cert_configured == False):
         try:
             device.api.configure_pki_authenticate_certificate(certificate=rootCA, 
@@ -192,9 +186,10 @@ def rtr_authenticate_rootca(device='', ca_directory=''):
             counter -= 1
         else:
             sleep(2)
-            # cert_configured = True
-            counter -= 1
-
+            cert_configured = True
+    
+    return cert_configured    
+    
 ###########################
 
 def rtr_build_csr(device=''):
@@ -221,7 +216,7 @@ def ca_sign_csr(csr='', hash='sha256'):
     new_cert.set_pubkey(csr_obj.get_pubkey())
     new_cert.set_serial_number(random.randrange(100000))
     new_cert.gmtime_adj_notBefore(0)
-    new_cert.gmtime_adj_notAfter(60*60*24*365*5)
+    new_cert.gmtime_adj_notAfter(60*60*24*60)
     new_cert.sign(ca_key, 'sha256')
 
     return new_cert
