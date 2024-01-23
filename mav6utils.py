@@ -8,6 +8,7 @@ from secrets import *
 
 # pyATS
 from pyats.topology import loader
+from unicon import Connection
 from pyats.utils.fileutils import FileUtils
 from genie.libs.sdk.apis.iosxe import utils
 from genie.libs.sdk.apis.iosxe.ntp.configure import *
@@ -54,17 +55,24 @@ def ip_version(ip):
         exit()
 
 
-def connect_host(device = '', protocol = '', command = ' '):
+def connect_host(device_ip='', device_hostname='', cli_user='', cli_pass='', protocol = '', command = ' '):
     # pyATS Connection Function
     # device - hostname of device being tested
     # protocol - connection protocol being tested (telnet or ssh)
     # command - command used to test connection
-    testbed = loader.load('pyATS/testbed.yaml')
+
+    #testbed = loader.load('pyATS/testbed.yaml')
     try:
-        dev = testbed.devices[device]
-        dev.connect(via = protocol, log_stdout=False)
+        #dev = testbed.devices[device]
+        start1 = protocol + ' ' + device_ip
+        dev = Connection(hostname=device_hostname,
+                 start=[start1],
+                 credentials={'default': {'username': cli_user, 'password': cli_pass},
+                                'enable': {'password': cli_pass}},
+                 os='iosxe', type='switch', platform='c9000', debug=True, log_stdout=False )
+        dev.connect()
     except:
-        return Null, Null
+        return None
     
     if (not command.isspace()):
         dev.configure('file prompt quiet')

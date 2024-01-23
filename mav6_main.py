@@ -21,13 +21,16 @@ from termcolor import colored
 # I.E. Telnet server test means the Test device is acting as the TFTP Server
 
 # Build pyATS Testbed environment from the secrets file configuration settings
-testbed_data = { 'TEST_DEVICE':TEST_DEVICE, 'TEST_DEVICE_HOSTNAME':TEST_DEVICE_HOSTNAME, 
-                 'CLI_USER':CLI_USER, 'CLI_PASS':CLI_PASS}
-render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data=testbed_data)
+#testbed_data = { 'TEST_DEVICE':TEST_DEVICE, 'TEST_DEVICE_HOSTNAME':TEST_DEVICE_HOSTNAME, 
+#                 'CLI_USER':CLI_USER, 'CLI_PASS':CLI_PASS}
+#render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data=testbed_data)
 
 print(colored('\n\nInitiating TEST_DEVICE connection (approx 30s)', "yellow"))
-device = connect_host(TEST_DEVICE_HOSTNAME, 'ssh')
 mav6_ip = MAV6_IPV4 if ip_version(TEST_DEVICE) == 4 else MAV6_IPV6
+device = connect_host(TEST_DEVICE, TEST_DEVICE_HOSTNAME, CLI_USER, CLI_PASS, protocol='ssh')
+if (device == None):
+    print(colored('Fatal Error: You must enable SSH to the device in order to send configurations and run tests', 'red'))
+    exit()
 
 
 # Ping Server Test
