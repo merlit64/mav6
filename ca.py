@@ -137,7 +137,7 @@ def rtr_remove_trustpoint(device=''):
     try:
         device.api.unconfigure_trustpoint(tp_name='MAV6-TP')
     except:
-        # no trustpoint to remove
+        # no trustpoint
         pass
 
 

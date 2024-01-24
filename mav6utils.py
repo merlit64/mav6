@@ -14,25 +14,33 @@ from genie.libs.sdk.apis.iosxe import utils
 from genie.libs.sdk.apis.iosxe.ntp.configure import *
 
 TESTBED_TEMPLATE = '''
+testbed:
+  name: mav6tb
+  
 devices:
   {{ TEST_DEVICE_HOSTNAME }}:
+    os: iosxe
+    type: c9000
+    platform: c9000
+    credentials:
+      default:
+        password: '{{ CLI_PASS }}'
+        username: {{ CLI_USER }}
+      enable:
+        password: '{{ CLI_PASS }}'
+        username: {{ CLI_USER }}
     connections:
       ssh:
         ip: {{ TEST_DEVICE }}
         protocol: ssh
+        settings:
+          #init_exec_commands: True
+          #init_config_commands: True
+          log_stdout: False
       telnet:
         ip: {{ TEST_DEVICE }}
         protocol: telnet
-    credentials:
-      default:
-        password: '{{ USER_PASS }}'
-        username: {{ CLI_USER }}
-      enable:
-        password: '{{ USER_PASS }}'
-    os: ios_xe
-    type: ios_xe
 '''
-
 
 def ip_version(ip):
     # ip_version takes in ip address and returns 4 or 6 (int)
@@ -62,15 +70,10 @@ def connect_host(device_ip='', device_hostname='', cli_user='', cli_pass='', pro
     # command - command used to test connection
 
     #testbed = loader.load('pyATS/testbed.yaml')
+    testbed = loader.load('pyATS/testbed.yaml')
     try:
-        #dev = testbed.devices[device]
-        start1 = protocol + ' ' + device_ip
-        dev = Connection(hostname=device_hostname,
-                 start=[start1],
-                 credentials={'default': {'username': cli_user, 'password': cli_pass},
-                                'enable': {'password': cli_pass}},
-                 os='iosxe', type='switch', platform='c9000', debug=True, log_stdout=False )
-        dev.connect()
+        dev = testbed.devices[device_hostname]
+        dev.connect(via = protocol, log_stdout=False)
     except:
         return None
     
@@ -79,7 +82,6 @@ def connect_host(device_ip='', device_hostname='', cli_user='', cli_pass='', pro
         dev.execute(command)
 
     return dev
-
 
 def file_on_flash(device, filename='test.txt'):
     # Checks to see if filename exists on the flash of the given device
@@ -161,7 +163,7 @@ def render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data={}, testb
 
     # Render the pyATS YAML file
     t = Template(testbed_template)
-    testbed_yaml = t.render(TEST_DEVICE = TEST_DEVICE, TEST_DEVICE_HOSTNAME = TEST_DEVICE_HOSTNAME, CLI_USER = CLI_USER, USER_PASS=USER_PASS)
+    testbed_yaml = t.render(TEST_DEVICE = TEST_DEVICE, TEST_DEVICE_HOSTNAME = TEST_DEVICE_HOSTNAME, CLI_USER = CLI_USER, CLI_PASS=CLI_PASS)
 
     # Save the YAML file
     yaml_file = open(testbed_filename, 'w')

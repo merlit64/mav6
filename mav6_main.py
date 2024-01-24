@@ -21,9 +21,9 @@ from termcolor import colored
 # I.E. Telnet server test means the Test device is acting as the TFTP Server
 
 # Build pyATS Testbed environment from the secrets file configuration settings
-#testbed_data = { 'TEST_DEVICE':TEST_DEVICE, 'TEST_DEVICE_HOSTNAME':TEST_DEVICE_HOSTNAME, 
-#                 'CLI_USER':CLI_USER, 'CLI_PASS':CLI_PASS}
-#render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data=testbed_data)
+testbed_data = { 'TEST_DEVICE':TEST_DEVICE, 'TEST_DEVICE_HOSTNAME':TEST_DEVICE_HOSTNAME, 
+                 'CLI_USER':CLI_USER, 'CLI_PASS':CLI_PASS}
+render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data=testbed_data)
 
 print(colored('\n\nInitiating TEST_DEVICE connection (approx 30s)', "yellow"))
 mav6_ip = MAV6_IPV4 if ip_version(TEST_DEVICE) == 4 else MAV6_IPV6
@@ -52,12 +52,14 @@ if TELNET_SERVER:
            TEST_DEVICE + ' from mav6: ' + mav6_ip
     print(colored(msg, "yellow"))
     
-    telnet_test_device = connect_host(TEST_DEVICE_HOSTNAME, 'telnet')
-    
+    telnet_test_device = connect_host(TEST_DEVICE, TEST_DEVICE_HOSTNAME, 
+                                      CLI_USER, CLI_PASS, 'telnet')
+
     if (telnet_test_device == None):
         print(colored("Telnet Server Test Failed", "red"))
     else:
         print(colored("Telnet Server Test Success", "green"))
+    telnet_test_device.disconnect()
         
     # Set device back to None so we connect via ssh for future tests
 
@@ -67,13 +69,17 @@ if SSH_SERVER:
            TEST_DEVICE + ' from mav6: ' + mav6_ip
     print(colored(msg, "yellow"))
 
-    ssh_test_device = connect_host(TEST_DEVICE_HOSTNAME, 'ssh')
+    ssh_test_device = connect_host(TEST_DEVICE, TEST_DEVICE_HOSTNAME, 
+                                   
+                                   
+                                   CLI_USER, CLI_PASS, 'ssh')
     
     if (ssh_test_device == None):
         print(colored("SSH Server Test Failed", "red"))
     else:
         print(colored("SSH Server Test Success", "green"))
-
+    ssh_test_device.disconnect()
+    
 # SCP Server Test
 if SCP_SERVER:
     # Create a txt file to transfer on the router
