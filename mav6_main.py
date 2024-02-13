@@ -4,7 +4,7 @@ from time import sleep, ctime
 import os
 
 ### LOCAL FILES ###
-from secrets import *
+from secrets_1 import *
 from test_configuration import *
 from server import *
 from client import *
@@ -20,6 +20,31 @@ from termcolor import colored
 # Note: ALL comments are made from the perspective of the test device
 # I.E. Telnet server test means the Test device is acting as the TFTP Server
 
+#initialize numpy array for test results output
+test_array = np.array([["Test", "Result"],
+                       ["PING_SERVER", "N/A"],
+                       ["TELNET_SERVER", "N/A"],
+                       ["SSH_SERVER", "N/A"],
+                       ["SCP_SERVER", "N/A"],
+                       ["TFTP_SERVER", "N/A"],
+                       ["HTTP_SERVER", "N/A"],
+                       ["HTTPS_SERVER", "N/A"],
+                       ["SNMPV2_READ", "N/A"],
+                       ["SNMPV2_WRITE", "N/A"],
+                       ["SNMPV3_READ", "N/A"],
+                       ["SNMPV3_WRITE", "N/A"],
+                       ["NTP_SERVER", "N/A"],
+                       ["PING_CLIENT", "N/A"],
+                       ["TELNET_CLIENT", "N/A"],
+                       ["SSH_CLIENT", "N/A"],
+                       ["TFTP_CLIENT", "N/A"],
+                       ["FTP_CLIENT", "N/A"],
+                       ["HTTP_CLIENT", "N/A"],
+                       ["HTTPS_CLIENT", "N/A"],
+                       ["SNMPV2_TRAP", "N/A"],
+                       ["SNMPV3_TRAP", "N/A"],
+                       ["NTP_CLIENT", "N/A"]])
+
 # Build pyATS Testbed environment from the secrets file configuration settings
 testbed_data = { 'TEST_DEVICE':TEST_DEVICE, 'TEST_DEVICE_HOSTNAME':TEST_DEVICE_HOSTNAME, 
                  'CLI_USER':CLI_USER, 'CLI_PASS':CLI_PASS}
@@ -33,6 +58,7 @@ if (device == None):
     exit()
 
 
+
 # Ping Server Test
 if PING_SERVER:
     msg = '\nAttempting Ping of TEST_DEVICE: ' + \
@@ -43,9 +69,10 @@ if PING_SERVER:
     
     if (result):
         print(colored("Ping Server Test Success", "green"))
+        test_array[1][1] = "PASS"
     else:
         print(colored("Ping Server Test Failed", "red"))
-
+        test_array[1][1] = "FAIL"
 # Telnet Server Test
 if TELNET_SERVER:
     msg = '\nAttempting telnet to TEST_DEVICE: ' + \
@@ -57,8 +84,10 @@ if TELNET_SERVER:
 
     if (telnet_test_device == None):
         print(colored("Telnet Server Test Failed", "red"))
+        test_array[2][1] = "FAIL"
     else:
         print(colored("Telnet Server Test Success", "green"))
+        test_array[2][1] = "PASS"
     telnet_test_device.disconnect()
         
     # Set device back to None so we connect via ssh for future tests
@@ -76,8 +105,10 @@ if SSH_SERVER:
     
     if (ssh_test_device == None):
         print(colored("SSH Server Test Failed", "red"))
+        test_array[3][1] = "FAIL"
     else:
         print(colored("SSH Server Test Success", "green"))
+        test_array[3][1] = "PASS"
     ssh_test_device.disconnect()
     
 # SCP Server Test
@@ -97,9 +128,11 @@ if SCP_SERVER:
 
     if (result):
         print(colored("SCP Server Test Successful\n\n", "green"))
+        test_array[4][1] = "PASS"
     else:
         print(colored("SCP Server Test Failed\n\n", "red"))
-
+        test_array[4][1] = "FAIL"
+        
 # TFTP Server Test
 
 if TFTP_SERVER:
@@ -118,8 +151,10 @@ if TFTP_SERVER:
 
     if (result):
         print(colored("TFTP Server Test Successful\n\n", "green"))
+        test_array[5][1] = "PASS"
     else:
         print(colored("TFTP Server Test Failed\n\n", "red"))
+        test_array[5][1] = "FAIL"
 
 # HTTP Server Test
 if HTTP_SERVER:
@@ -135,8 +170,10 @@ if HTTP_SERVER:
 
     if (result=='200'):
         print(colored("HTTP Server Test Success", "green"))
+        test_array[6][1] = "PASS"
     else:
         print(colored("HTTP Server Test Failed", "red"))
+        test_array[6][1] = "FAIL"
         
 
 # HTTPS Server Test
@@ -152,8 +189,10 @@ if HTTPS_SERVER:
     
     if (result=='200'):
         print(colored("HTTPS Server Test Success", "green"))
+        test_array[7][1] = "PASS"
     else:
         print(colored("HTTPS Server Test Failed", "red"))
+        test_array[7][1] = "FAIL"
 
 # SNMP v2 Read Test
 if SNMPV2_READ:
@@ -168,8 +207,10 @@ if SNMPV2_READ:
 
     if (result):
         print(colored("SNMP V2 Read Test Success", "green"))
+        test_array[8][1] = "PASS"
     else:
         print(colored("SNMP V2 Read Test Failed", "red"))
+        test_array[8][1] = "FAIL"
 
 # SNMP v2 Write Test
 if SNMPV2_WRITE:
@@ -184,8 +225,10 @@ if SNMPV2_WRITE:
 
     if (result):
         print(colored("SNMP V2 Write Test Success", "green"))
+        test_array[9][1] = "PASS"
     else:
         print(colored("SNMP V2 Write Test Failed", "red"))
+        test_array[9][1] = "FAIL"
 
 # SNMP v3 Read Test
 if SNMPV3_READ:
@@ -209,8 +252,10 @@ if SNMPV3_READ:
 
     if (result):
         print(colored("SNMP V3 Read Test Success", "green"))
+        test_array[10][1] = "PASS"
     else:
         print(colored("SNMP V3 Read Test Failed", "red"))
+        test_array[10][1] = "FAIL"
 
 # SNMP v3 Write Test
 if SNMPV3_WRITE:
@@ -235,8 +280,10 @@ if SNMPV3_WRITE:
 
     if (result):
         print(colored("SNMP V3 Write Test Success", "green"))
+        test_array[11][1] = "PASS"
     else:
         print(colored("SNMP V3 Write Test Failed", "red"))
+        test_array[11][1] = "FAIL"
 
 # NTP v4 Server Test
 if NTP_SERVER:
@@ -252,9 +299,10 @@ if NTP_SERVER:
 
     if (result):
         print(colored("NTP Server Test Success", "green"))
+        test_array[12][1] = "PASS"
     else:
         print(colored("NTP Server Test Failed", "red"))
-
+        test_array[12][1] = "FAIL"
 
 ### CLIENT TESTS ###
 print("\nExecuting Client Tests (where test box acts as the client):\n\n")
@@ -269,8 +317,10 @@ if PING_CLIENT:
 
     if (result):
         print(colored("Ping Client Test Successful\n\n", "green"))
+        test_array[13][1] = "PASS"
     else:
         print(colored("Ping Client Test Failed\n\n", "red"))
+        test_array[13][1] = "FAIL"
 
 # Telnet Client Test
 if TELNET_CLIENT:
@@ -282,8 +332,10 @@ if TELNET_CLIENT:
    
     if (result):
         print(colored("Telnet Client Test Successful\n\n", "green"))
+        test_array[14][1] = "PASS"
     else:
         print(colored("Telnet Client Test Failed\n\n", "red"))
+        test_array[14][1] = "FAIL"
  
 # SSH Client Test
 if SSH_CLIENT:
@@ -295,8 +347,10 @@ if SSH_CLIENT:
 
     if (result):
         print(colored("SSH Client Test Successful\n\n", "green"))
+        test_array[15][1] = "PASS"
     else:
         print(colored("SSH Client Test Failed\n\n", "red"))
+        test_array[15][1] = "FAIL"
 
 # SCP client Test
 # Linux Server
@@ -312,8 +366,10 @@ if TFTP_CLIENT:
                                   mav6_ip=mav6_ip)
     if (result):
         print(colored("TFTP Client Test Successful\n\n", "green"))
+        test_array[16][1] = "PASS"
     else:
         print(colored("TFTP Client Test Failed\n\n", "red"))
+        test_array[16][1] = "FAIL"
 
 # FTP Client test
 if FTP_CLIENT:
@@ -324,8 +380,10 @@ if FTP_CLIENT:
 
     if (result):
         print(colored("FTP Client Test Successful\n\n", "green"))
+        test_array[17][1] = "PASS"
     else:
         print(colored("FTP Client Test Failed\n\n", "red"))
+        test_array[17][1] = "FAIL"
 
 # HTTP client Test
 if HTTP_CLIENT:
@@ -337,8 +395,10 @@ if HTTP_CLIENT:
 
     if (result):
         print(colored("HTTP Client Test Successful\n\n", "green"))
+        test_array[18][1] = "PASS"
     else:
         print(colored("HTTP Client Test Failed\n\n", "red"))
+        test_array[18][1] = "FAIL"
 
 # HTTPS client Test
 
@@ -351,8 +411,10 @@ if HTTPS_CLIENT:
                                   mav6_ip=mav6_ip, ca_directory=CA_DIRECTORY)
     if (result):
         print(colored("HTTPS Client Test Successful\n\n", "green"))
+        test_array[19][1] = "PASS"
     else:
         print(colored("HTTPS Client Test Failed\n\n", "red"))
+        test_array[19][1] = "FAIL"
 
 # SNMP v2 Trap Test
 if SNMPV2_TRAP:
@@ -371,8 +433,10 @@ if SNMPV2_TRAP:
     # Print Test results to screen
     if (result):
         print(colored("SNMPv2 Trap Test Successful\n\n", "green"))
+        test_array[20][1] = "PASS"
     else:
         print(colored("SNMPv2 Trap Test Failed\n\n", "red"))
+        test_array[20][1] = "FAIL"
 
 # SNMP v3 Trap Test
 if SNMPV3_TRAP:
@@ -397,8 +461,10 @@ if SNMPV3_TRAP:
     # Print Test results to screen
     if (result):
         print(colored("SNMPv3 Trap Test Successful\n\n", "green"))
+        test_array[21][1] = "PASS"
     else:
         print(colored("SNMPv3 Trap Test Failed\n\n", "red"))
+        test_array[21][1] = "FAIL"
     
 # NTP v4 Client Test
 if NTP_CLIENT:
@@ -410,5 +476,9 @@ if NTP_CLIENT:
 
     if (result):
         print(colored("NTPv4 Test Successful\n\n", "green"))
+        test_array[22][1] = "PASS"
     else:
         print(colored("NTPv4 Test Failed\n\n", "red"))
+        test_array[22][1] = "FAIL"
+        
+server_test_results(test_array)

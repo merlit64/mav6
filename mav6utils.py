@@ -4,7 +4,9 @@ import shutil
 import ipaddr
 from termcolor import colored
 from jinja2 import Template
-from secrets import *
+from secrets_1 import *
+import texttable
+import numpy as np
 
 # pyATS
 from pyats.topology import loader
@@ -173,3 +175,14 @@ def render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data={}, testb
     while(subdirectory_count != 0):
         subdirectory_count-=1
         os.chdir('..')
+
+def server_test_results(server_results_array):
+    test_ip = "Testing IPv4 addresses" if ip_version(TEST_DEVICE) == 4 else "Testing IPv6 addresses"
+    output = open("test_results.txt", "w")
+    table = texttable.Texttable()   
+    table.add_rows(server_results_array)
+    output.write(test_ip + "\n\n")
+    output.write(table.draw())
+    output.close()
+
+    
