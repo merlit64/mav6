@@ -25,6 +25,17 @@ def start_server(transfer_protocol='tftp', ip=''):
             server.listen(ip, 69, af_family=socket.AF_INET6)
         else:
             server.listen(ip, 69)
+    elif (transfer_protocol == 'syslog'):
+        print('starting syslog server...')
+        if (ip_version(ip) == 6):
+            server_socket = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+        else:
+            server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        server_socket.bind((ip, 514))
+        while True:
+            message, address = server_socket.recvfrom(1024)
+            print('Received syslog from ' + address )
+            print(message)
     elif (transfer_protocol == 'ftp'):
         print('starting ftp server...')
         authorizer = DummyAuthorizer()
