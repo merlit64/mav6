@@ -26,6 +26,7 @@ MAV6 is an IPv6 testing application for Cisco networking devices. The objective 
 - Ubuntu Server
   - IPv4 and IPv6 address
   - ubuntu server username and password
+- Other
   - NTP server IPv4 and IPv6 addresses reachable by test device
 
 
@@ -60,9 +61,9 @@ To enable ubuntu telnet server for ipv6, as well as default ipv4 support:
   - choose 2 for pyhton3.11
 
 ### Clone Mav6 ###
-cd Documents
-git clone https://github.com/merlit64/mav6.git
-cd mav6
+- cd Documents
+- git clone https://github.com/merlit64/mav6.git
+- cd mav6
 
 ### Install Virtual Environment and Development Environment ###
 
@@ -93,6 +94,7 @@ if using vscode
   - update CLI_USER and USER_PASS to allow mav6 to attach to the test_device via SSH (required)
   - update MAV6_IPV4 and MAV6_IPV6 MAV6_USER and MAV6_PASS (required)
   - update NTP_TEST_SERVER, this can be any ntp server as long as it is accessible by the test box, it must match the ip version being used
+  
 Note: These ipv4 and ipv6 addresses and the hostname, cli user/pass should already be configured on the TEST_DEVICE.  SNMP parameters will get pushed to the test device by Mav6 and need not be configured in advance. All required protocol servers for the tests are embedded on mav6 and will be spun up dynamically during the test that requires them with the exception of the NTP server.  The user need only provide an IPv4 and/or IPv6 address for an NTP server that the test device can reach.
 
 - configure test_configuration to indicate which tests will execute
