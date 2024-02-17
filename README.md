@@ -79,11 +79,13 @@ Install VS Code or IDE of choice, if desired.  An IDE is only needed if you want
 
 if using vscode
 - code .
-- you may want to install the Python Extension Pack
+- The moment you access your first .py file, VSCode will ask you to install the Python Extension Pack... do it
+- Ctrl-Shift-P Select Python Interpreter... make sure you choose mav6-env
+- Debug... create launch.json file and add "sudo": true to the end
 
 
 ## MAV6 Setup ##
-- change ’sample_secrets.py’ to ’secrets.py’ and configure appropriately with authentication info
+- change ’sample_secrets.py’ to ’secrets_1.py’ and configure appropriately with authentication info
   - copy sample_secrets.py file to secrets.py
   - update TEST_DEVICE to the proper IPv4 or IPv6 address (depending on which you intend to test, required) 
   - update TEST_DEVICE HOSTNAME to the hostname of the test device (required)  Note: The hostname should already be configured on the test device
