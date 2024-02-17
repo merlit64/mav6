@@ -33,14 +33,14 @@ MAV6 is an IPv6 testing application for Cisco networking devices. The objective 
 ## Ubuntu Server Configuration ##
 
 - Install an Ubuntu 22.04 (python 3.10.12) Virtual Machine
+- Give the server an IPv4 and and IPv6 address
 - sudo apt update
 - sudo apt upgrade
-- Give it and IPv4 and and IPv6 address
-- Remote login: on
-- apt install sshpass
-- apt install telnetd telnet
+- Run software updater, if there are any updates, "Install Now", restart if requested
+<!-- - Remote login: on -->
 - sudo apt install git
 - sudo apt install sshpass (for scp tests)
+- sudo apt install telnetd telnet (for telnet tests)
 - sudo apt install openssh-server (for ssh tests)
 
 ### Telnet Server Configuration ###
@@ -48,40 +48,38 @@ MAV6 is an IPv6 testing application for Cisco networking devices. The objective 
 To enable ubuntu telnet server for ipv6, as well as default ipv4 support:
 - sudo vi /etc/inetd.conf
 - copy the line that start with "telnet     stream     tcp" and paste it below the existing line
-- change tcp to tcp6
+- In the copy of the line, change tcp to tcp6
 - save and quit
 - systemctl restart inetd
-
-### Upgrade to Python 3.11 ###
-- sudo apt install python3.11
-- python3 -V will still show 3.10, to modify this:
-  - sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
-  - sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 2
-  - sudo update-alternatives --config python3
-  - choose 2 for pyhton3.11
+- test by telneting to your self via ipv4 (ex: telnet 10.112.1.107), don't forget to exit when successful
+- test by telneting to your self via ipv6 (ex: telnet 2001:db8::1), don't forget to exit when successful
+- test by ssh-ing to your self via ipv4 (ex: ssh user1@10.112.1.107), don't forget to exit when successful
+- test by ssh-ing to your self via ipv6 (ex: ssh user1@2001:db8::1), don't forget to exit when successful
 
 ### Clone Mav6 ###
 - cd Documents
 - git clone https://github.com/merlit64/mav6.git
 - cd mav6
 
-### Install Virtual Environment and Development Environment ###
+### Install Python3.11 and Virtual Environment ###
 
 Starting with the Virtual Environment:
+- sudo apt install python3.11
 - sudo apt install python3-pip
 - sudo apt install python3.11-venv
-- python3 -m venv ../mav6-env
+- python3.11 -m venv ../mav6-env
 - source ../mav6-env/bin/activate
+- python3 -V should show python3.11...
 - pip install -r requirements.txt
 
+
+### Oprional Development Environment ###
 Install VS Code or IDE of choice, if desired.  An IDE is only needed if you want to debug:
 - sudo snap install --classic code
 
 if using vscode
 - code .
 - you may want to install the Python Extension Pack
-
-
 
 
 ## MAV6 Setup ##
