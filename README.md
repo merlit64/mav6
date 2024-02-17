@@ -101,6 +101,13 @@ Note: These ipv4 and ipv6 addresses and the hostname, cli user/pass should alrea
 - Make sure there is communication between mav 6 and the test device via ipv4 and ipv6
 
 
+## Running MAV6 ##
+To run Mav6:
+- change to ~/Doucments/mav6 directory, cd ~/Documents/mav6
+- Activate the virtual environment (if ont already activated) with source ../mav6-env/bin/activate
+- Run with sudo ../mav6-env/bin/python mav6_main.py
+Note: sudo is required because ubuntu requires su access to open well-known TCP and UDP ports
+Alternatively run mav6 through VS Code's debug environment.  "sudo": true must me a line in the launch.json file.
 
 
 
