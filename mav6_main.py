@@ -480,5 +480,26 @@ if NTP_CLIENT:
     else:
         print(colored("NTPv4 Test Failed\n\n", "red"))
         test_array[22][1] = "FAIL"
+
+# Syslog Client Test
+if SYSLOG_CLIENT:
+    # Configure device
+    device.configure('logging host ' + mav6_ip )
+
+    msg = '\nAttempting to send an Syslog message from TEST_DEVICE: ' + \
+           TEST_DEVICE + ' to mav6: ' + mav6_ip
+    print(colored(msg, "yellow"))
+    
+    result = syslog_client( mav6_ip=mav6_ip, device=device)
+    #result = file_transfer_client(protocol='http', device=device, mav6_ip=mav6_ip)
+
+    # Print Test results to screen
+    if (result):
+        print(colored("Syslog Client Test Successful\n\n", "green"))
+        test_array[22][1] = "PASS"
+    else:
+        print(colored("Syslog Client Test Failed\n\n", "red"))
+        test_array[22][1] = "FAIL"
+  
         
 server_test_results(test_array)

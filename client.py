@@ -167,58 +167,6 @@ def ntp_client(device='', ntp_server=''):
         return True
     
 
-def snmp_start_trap_receiver(q, snmp_version=2, ip='', port=162, community=''):
-    # snmp_start_trap_receiver will be called as its own process
-    #   It starts a MAV6 embedded trap reciever that will
-    #   collect SNMP traps from the test device
-    #
-    # q - a multiprocess communications q that received traps will be pushed onto
-    # snmp_version - 2 or 3
-    # ip - ip address (v4 or v6) the MAV6 trap receiver will listen on
-    # port - The port the MAV6 trap receiver will listen on
-
-    def cbFun(snmpEngine, stateReference, contextEngineId, contextName, varBinds, cbCtx):
-        # Call back function, This runs when a trap is received
-        print('Received a Trap!')
-        for name, val in varBinds:
-            print('Receiver: ' + name.prettyPrint() + ' = ' + val.prettyPrint())
-            q.put(name.prettyPrint() + ' = ' + val.prettyPrint())
-
-    snmp_engine = engine.SnmpEngine(rfc1902.OctetString(hexValue='80000009030000c1b1129980'))
-    if (ip_version(ip) == 4):
-        print('Using IPv4 as a Transport on receiver')
-        config.addTransport(snmp_engine, udp.domainName, 
-                            udp.UdpTransport().openServerMode((ip, port)) )
-    else:
-        print('Using IPv6 as a Transport on receiver')
-        config.addTransport(snmp_engine, udp6.domainName + (1,), 
-                            udp6.Udp6Transport().openServerMode((ip, port)) )
-
-    if (snmp_version == 2):
-        print('starting snmp trap receiver v2...')
-        config.addV1System(snmp_engine, 'my-area', community)
-    elif (snmp_version == 3):
-        print('starting snmp trap receiver v3...')
-        config.addV3User(snmp_engine, 'mavuser')
-        '''
-        config.addVacmUser(snmp_engine, 3, 'v3user', 'authPriv', 
-                           (1,3,6,1,2,1), (1,3,6,1,2,1) )
-        '''
-
-    else:
-        print(colored("Only SNMP version 2 or 3 is supported... Exiting", "red"))
-
-    ntfrcv.NotificationReceiver(snmp_engine, cbFun)
-    snmp_engine.transportDispatcher.jobStarted(1)
-
-    try:
-        print('Starting engine on ' + ip + ':' + str(port))
-        snmp_engine.transportDispatcher.runDispatcher()
-    except:
-        snmp_engine.transportDispatcher.closeDispatcher()
-        raise
-
-
 def snmp_trap_send(destination='', port=162, snmp_version = 2):
     # snmp_trap_send is strictly for testing the trap receiver
     #   It may never be used in normal mav6 operation
@@ -404,3 +352,17 @@ def file_transfer_client(protocol='', device='',
     else:
         return False
     
+def syslog_client( mav6_ip=mav6_ip, device=device):
+
+    #q = Queue()
+    embedded_server_process = Process(target=start_notification_server, name='mav6notificationserver', 
+                                    args=('syslog', mav6_ip,))
+
+    print('spawning ' + protocol + ' server process')
+    embedded_server_process.start()
+    sleep(5)
+
+    print("Attempting to send syslog from test device")
+    ### DO SOMETHING HERE TO TRIGGER A SYSLOG EVENT ###
+    sleep(2)
+    embedded_server_process.kill()

@@ -23,6 +23,7 @@ HTTP_CLIENT = False
 HTTPS_CLIENT = False
 SNMPV2_TRAP = False
 SNMPV3_TRAP = False
+SYSLOG_CLIENT = False
 NTP_CLIENT = False
 
 # Local directories and files built
