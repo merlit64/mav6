@@ -484,14 +484,16 @@ if NTP_CLIENT:
 # Syslog Client Test
 if SYSLOG_CLIENT:
     # Configure device
-    device.configure('logging host ' + mav6_ip )
+    if (ip_version(mav6_ip) == 6):
+        device.configure('logging host ipv6 ' + mav6_ip )
+    else:
+        device.configure('logging host ' + mav6_ip )
 
-    msg = '\nAttempting to send an Syslog message from TEST_DEVICE: ' + \
+    msg = '\nAttempting to send a Syslog message from TEST_DEVICE: ' + \
            TEST_DEVICE + ' to mav6: ' + mav6_ip
     print(colored(msg, "yellow"))
     
-    result = syslog_client( mav6_ip=mav6_ip, device=device)
-    #result = file_transfer_client(protocol='http', device=device, mav6_ip=mav6_ip)
+    result = syslog_client( mav6_ip=mav6_ip, device=device, protocol='syslog')
 
     # Print Test results to screen
     if (result):

@@ -148,7 +148,7 @@ def snmp_start_trap_receiver(q, snmp_version=2, ip='', port=162, community=''):
 
 
 
-def start_notification_server(transfer_protocol='syslog', ip=''):
+def start_notification_server(transfer_protocol='syslog', ip='', q=''):
     # start_syslog_server will be called as a new process
     # It will start an embedded syslog server
     # for the test device to act as a client against
@@ -167,7 +167,10 @@ def start_notification_server(transfer_protocol='syslog', ip=''):
     else:
         print('No embedded server for ' + transfer_protocol)
         return False
+    
     while True:
-        message = server_socket.recvfrom(1024)
+        data = server_socket.recvfrom(1024)
+        message = data[0].decode()
         print('Received ' + transfer_protocol + ' message:')
         print(message)
+        q.put(message)

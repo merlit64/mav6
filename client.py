@@ -352,17 +352,26 @@ def file_transfer_client(protocol='', device='',
     else:
         return False
     
-def syslog_client( mav6_ip=mav6_ip, device=device):
+def syslog_client(mav6_ip='', device='', protocol='syslog'):
 
-    #q = Queue()
-    embedded_server_process = Process(target=start_notification_server, name='mav6notificationserver', 
-                                    args=('syslog', mav6_ip,))
+    q = Queue()
+    embedded_server_process = Process(target=start_notification_server, name='embeddedserver', 
+                                    args=(protocol, mav6_ip, q,))
 
     print('spawning ' + protocol + ' server process')
     embedded_server_process.start()
     sleep(5)
 
-    print("Attempting to send syslog from test device")
-    ### DO SOMETHING HERE TO TRIGGER A SYSLOG EVENT ###
+    print("Attempting to send syslog message from test device")
+    device.configure('')
     sleep(2)
+    
+    result=False
+    while(not q.empty()):
+        message = q.get()
+        if "Configured from console" in message:
+            result = True
+    
     embedded_server_process.kill()
+    sleep(2)
+    return result
