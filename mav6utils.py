@@ -7,6 +7,7 @@ from jinja2 import Template
 from secrets_1 import *
 import texttable
 import numpy as np
+import yaml
 
 # pyATS
 from pyats.topology import loader
@@ -186,5 +187,9 @@ def server_test_results(server_results_array):
     output.close()
 
     
-def configure_test_device(test=''):
-    pass
+def configure_test_device(device, config_dict, test, 
+                          td_configure='td_configure', td_execute='td_execute'):
+    if 'td_execute' in config_dict['tests'][test]:
+        device.execute(config_dict['tests'][test][td_execute])
+    if 'td_configure' in config_dict['tests'][test]:
+        device.configure(config_dict['tests'][test][td_configure])

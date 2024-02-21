@@ -9,6 +9,14 @@ from pyftpdlib.handlers import FTPHandler
 from pyftpdlib.servers import FTPServer
 from pyftpdlib.authorizers import DummyAuthorizer
 
+# For SNMP tests
+from pysnmp.entity import engine, config
+from pysnmp.proto import rfc1902
+from pysnmp.carrier.asynsock.dgram import udp, udp6
+from pysnmp.entity.rfc3413 import ntfrcv
+
+
+
 
 def start_server(transfer_protocol='tftp', ip=''):
     # start_server will be called as a new process

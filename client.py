@@ -10,10 +10,10 @@ from genie.libs.sdk.apis.iosxe.ntp.configure import *
 from unicon.eal.dialogs import Dialog, Statement
 
 # for SNMP tests
-from pysnmp.hlapi import *
-from pysnmp.carrier.asynsock.dgram import udp, udp6
-from pysnmp.entity import engine, config
-from pysnmp.entity.rfc3413 import ntfrcv, context, cmdrsp
+#from pysnmp.hlapi import *
+#from pysnmp.carrier.asynsock.dgram import udp, udp6
+#from pysnmp.entity import engine, config
+#from pysnmp.entity.rfc3413 import ntfrcv, context, cmdrsp
 from pysnmp.proto import rfc1902
 
 
@@ -233,16 +233,12 @@ def snmp_trap_client(snmp_version=2, comm_uname='', mav6_ip='', device='' ):
     # Below sends a test trap from mav6 to mav6 trap receiver, leave commented unless testing
     #snmp_trap_send(destination=mav6_ip, port=162, snmp_version=snmp_version)
     
-    # Configure TEST_DEVICE to send SNMP traps to trap receiver
+    # Trigger an event to send a trap
+    print('Triggering Test Device to send a trap')
     if snmp_version == 2:
-        device.configure ('snmp-server host ' + mav6_ip + ' traps version 2c ' + comm_uname + \
-                          ' udp-port 162 config\n' )
+        device.configure ('')
     elif snmp_version == 3:
-        device.configure ('snmp-server group mav6group v3 noauth\n' + \
-                            'snmp-server user mav6user mav6group v3\n' + \
-                            'snmp-server enable traps\n' + \
-                            'snmp-server host ' + mav6_ip + ' traps version 3 noauth mav6user\n'
-                            )
+        device.configure ('')
     else:
         print('That version of SNMP does not exist')
         SystemExit()
@@ -362,7 +358,7 @@ def syslog_client(mav6_ip='', device='', protocol='syslog'):
     embedded_server_process.start()
     sleep(5)
 
-    print("Attempting to send syslog message from test device")
+    print("Triggering test device to send a syslog message")
     device.configure('')
     sleep(2)
     

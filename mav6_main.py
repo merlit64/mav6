@@ -1,6 +1,8 @@
 ######## IMPORTED LIBRARIES ########
 ### STANDARD LIBRARIES ###
 from time import sleep, ctime
+from jinja2 import Template
+import yaml
 import os
 
 ### LOCAL FILES ###
@@ -47,12 +49,26 @@ test_array = np.array([["Test", "Result"],
                        ["SYSLOG_CLIENT", "N/A"]])
 
 # Build pyATS Testbed environment from the secrets file configuration settings
+mav6_ip = MAV6_IPV4 if ip_version(TEST_DEVICE) == 4 else MAV6_IPV6
+
 testbed_data = { 'TEST_DEVICE':TEST_DEVICE, 'TEST_DEVICE_HOSTNAME':TEST_DEVICE_HOSTNAME, 
-                 'CLI_USER':CLI_USER, 'CLI_PASS':CLI_PASS}
+                 'CLI_USER':CLI_USER, 'CLI_PASS':CLI_PASS, 'COM_RO':COM_RO, 'COM_RW':COM_RW,
+                 'SNMP_USER':SNMP_USER, 'AUTH_KEY':AUTH_KEY, 'PRIV_KEY':PRIV_KEY, 
+                 'mav6_ip':mav6_ip}
 render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data=testbed_data)
 
+# Render device pack and data into a device configuraiton dictionary
+dp_file = open('device_packs/iosxe.yaml', 'r')
+dp_template = dp_file.read()
+dp_file.close()
+dp = Template(dp_template)
+dp_yaml_str = dp.render(testbed_data)
+
+config_dict=yaml.safe_load(dp_yaml_str)
+
+
+ 
 print(colored('\n\nInitiating TEST_DEVICE connection (approx 30s)', "yellow"))
-mav6_ip = MAV6_IPV4 if ip_version(TEST_DEVICE) == 4 else MAV6_IPV6
 device = connect_host(TEST_DEVICE, TEST_DEVICE_HOSTNAME, CLI_USER, CLI_PASS, protocol='ssh')
 if (device == None):
     print(colored('Fatal Error: You must enable SSH to the device in order to send configurations and run tests', 'red'))
@@ -157,8 +173,7 @@ if TFTP_SERVER:
 # HTTP Server Test
 if HTTP_SERVER:
     # Configure device
-    device.configure('ip http server')
-    device.configure('no ip http secure-server')
+    configure_test_device(device, config_dict, test='HTTP_SERVER')
     sleep(10)
 
     msg = '\nAttempting HTTP connection to TEST_DEVICE: ' + \
@@ -177,8 +192,10 @@ if HTTP_SERVER:
 # HTTPS Server Test
 if HTTPS_SERVER:
     # Configure device
-    device.configure('ip http server')
-    device.configure('ip http secure-server')
+    configure_test_device(device, config_dict, test='HTTPS_SERVER')
+
+    #device.configure('ip http server')
+    #device.configure('ip http secure-server')
     sleep(10)
 
     msg = '\nAttempting HTTPS connection to ' + TEST_DEVICE + ' from mav6: ' + mav6_ip
@@ -195,7 +212,7 @@ if HTTPS_SERVER:
 # SNMP v2 Read Test
 if SNMPV2_READ:
     # Configure device
-    device.configure('snmp-server community ' + COM_RO + ' ro')
+    configure_test_device(device, config_dict, test='SNMPV2_READ')
 
     msg = '\nAttempting SNMPv2 read request to TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
@@ -213,7 +230,7 @@ if SNMPV2_READ:
 # SNMP v2 Write Test
 if SNMPV2_WRITE:
     # Configure device
-    device.configure('snmp-server community ' + COM_RW + ' rw')
+    configure_test_device(device, config_dict, test='SNMPV2_WRITE')
 
     msg = '\nAttempting SNMPv2 write  to TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
@@ -231,15 +248,7 @@ if SNMPV2_WRITE:
 # SNMP v3 Read Test
 if SNMPV3_READ:
     # Configure device
-    device.configure('no snmp-server user mav6user mav6group v3')
-    device.configure('no snmp-server group mav6group v3 priv')
-    device.configure('snmp-server group mav6group v3 priv')
-    command = 'snmp-server user ' + SNMP_USER + ' mav6group v3 auth sha ' + \
-                AUTH_KEY + ' priv aes 128 ' + PRIV_KEY
-    device.configure(command)
-    #device.configure('snmp-server enable traps')
-    #device.configure('snmp-server enable traps config')
-    #device.configure('snmp-server host ' + mav6_ip + ' ver 3 noauth mav6user')
+    configure_test_device(device, config_dict, test='SNMPV3_READ')
     
     msg = '\nAttempting SNMPv3 read request to TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
@@ -258,16 +267,7 @@ if SNMPV3_READ:
 # SNMP v3 Write Test
 if SNMPV3_WRITE:
     # Configure device
-    device.configure('no snmp-server user mav6user mav6group v3')
-    device.configure('no snmp-server group mav6group v3 priv')
-    device.configure('snmp-server view v3view iso included')
-    device.configure('snmp-server group mav6group v3 priv write v3view')
-    command = 'snmp-server user ' + SNMP_USER + ' mav6group v3 auth sha ' + \
-                AUTH_KEY + ' priv aes 128 ' + PRIV_KEY
-    device.configure(command)
-    #device.configure('snmp-server enable traps')
-    #device.configure('snmp-server enable traps config')
-    #device.configure('snmp-server host ' + mav6_ip + ' ver 3 noauth mav6user')
+    configure_test_device(device, config_dict, test='SNMPV3_WRITE')
 
     msg = '\nAttempting SNMPv3 write to TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
@@ -286,7 +286,7 @@ if SNMPV3_WRITE:
 # NTP v4 Server Test
 if NTP_SERVER:
     # Configure device
-    device.configure('ntp master')
+    configure_test_device(device, config_dict, test='NTP_SERVER')
 
     # Send NTP version 4 request over ipv4 or ipv6
     msg = '\nAttempting NTPv4 connection  to TEST_DEVICE: ' + \
@@ -416,10 +416,8 @@ if HTTPS_CLIENT:
 
 # SNMP v2 Trap Test
 if SNMPV2_TRAP:
-    device.configure('snmp-server community ' + COM_RW + ' rw')
-    device.configure('snmp-server enable traps')
-    device.configure('snmp-server enable traps config')
-    device.configure('snmp-server host ' + mav6_ip + ' traps ' + COM_RW)
+    # Configure Device
+    configure_test_device(device, config_dict, test='SNMPV2_TRAP')
 
     msg = '\nAttempting to send an SNMPv2 trap from TEST_DEVICE: ' + \
            TEST_DEVICE + ' to mav6: ' + mav6_ip
@@ -439,15 +437,7 @@ if SNMPV2_TRAP:
 # SNMP v3 Trap Test
 if SNMPV3_TRAP:
     # Configure device
-    device.configure('no snmp-server user mav6user mav6group v3')
-    device.configure('no snmp-server group mav6group v3 priv')
-    device.configure('snmp-server group mav6group v3 priv')
-    command = 'snmp-server user mav6user mav6group v3 auth sha ' + AUTH_KEY + \
-               ' priv aes 128 ' + PRIV_KEY
-    device.configure(command)
-    device.configure('snmp-server enable traps')
-    device.configure('snmp-server enable traps config')
-    device.configure('snmp-server host ' + mav6_ip + ' ver 3 noauth mav6user')
+    configure_test_device(device, config_dict, test='SNMPV3_TRAP')
 
     msg = '\nAttempting to send an SNMPv3 trap from TEST_DEVICE: ' + \
            TEST_DEVICE + ' to mav6: ' + mav6_ip
@@ -482,10 +472,13 @@ if NTP_CLIENT:
 # Syslog Client Test
 if SYSLOG_CLIENT:
     # Configure device
+
     if (ip_version(mav6_ip) == 6):
-        device.configure('logging host ipv6 ' + mav6_ip )
+        configure_test_device(device, config_dict, test='SYSLOG_CLIENT', td_configure='td_ipv6_configure')
+        #device.configure('logging host ipv6 ' + mav6_ip )
     else:
-        device.configure('logging host ' + mav6_ip )
+        configure_test_device(device, config_dict, test='SYSLOG_CLIENT', td_configure='td_ipv4_configure')
+        #device.configure('logging host ' + mav6_ip )
 
     msg = '\nAttempting to send a Syslog message from TEST_DEVICE: ' + \
            TEST_DEVICE + ' to mav6: ' + mav6_ip
