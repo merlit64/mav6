@@ -186,3 +186,5 @@ def server_test_results(server_results_array):
     output.close()
 
     
+def configure_test_device(test=''):
+    pass

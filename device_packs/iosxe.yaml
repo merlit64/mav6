@@ -1,0 +1,56 @@
+tests:
+  TFTP_SERVER:
+    td_execute: >
+      show netconf counters | append from_testdevice.txt
+    td_config: >
+      tftp-server flash:from_testdevice.txt
+  HTTP_SERVER:
+    td_configure: >
+      ip http server
+      no ip http secure-server
+  HTTPS_SERVER:
+    td_configure: >
+      ip http server
+      ip http secure-server
+  SNMPV2_READ:
+    td_configure: >
+      snmp-server community {{COM_RO}} ro
+  SNMPV2_WRITE:
+    td_configure: >
+      snmp-server community {{COM_RW}} rw
+  SNMPV3_READ:
+    td_configure: >
+      no snmp-server user mav6user mav6group v3
+      no snmp-server group mav6group v3 priv
+      snmp-server group mav6group v3 priv
+      snmp-server user {{SNMP_USER}} mav6group v3 auth sha {{AUTH_KEY}} priv aes 128 {{PRIV_KEY}}
+  SNMPV3_WRITE:
+    td_configure: >
+      no snmp-server user mav6user mav6group v3
+      no snmp-server group mav6group v3 priv
+      snmp-server view v3view iso included
+      snmp-server group mav6group v3 priv write v3view
+      snmp-server user {{SNMP_USER}} mav6group v3 auth sha {{AUTH_KEY}} priv aes 128 {{PRIV_KEY}}
+  NTP_SERVER:
+    td_configure: >
+      ntp master
+  SNMPV2_TRAP:
+    td_configre: >
+      snmp-server community {{COM_RW}} rw
+      snmp-server enable traps
+      snmp-server enable traps config
+      snmp-server host {{mav6_ip}} traps {{COM_RW}}
+  SNMPV3_TRAP:
+    td_configure: >
+      no snmp-server user mav6user mav6group v3
+      no snmp-server group mav6group v3 priv
+      snmp-server group mav6group v3 priv
+      snmp-server user mav6user mav6group v3 auth sha {{AUTH_KEY}} priv aes 128 {{PRIV_KEY}}
+      snmp-server enable traps
+      snmp-server enable traps config
+      snmp-server host {{mav6_ip}} ver 3 noauth mav6user
+  SYSLOG_CLIENT:
+    td_ipv4_configure: >
+      logging host {{mav6_ip}}
+    td_ipv6_configure: >
+      logging host ipv6 {{mav6_ip}}

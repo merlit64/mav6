@@ -43,7 +43,8 @@ test_array = np.array([["Test", "Result"],
                        ["HTTPS_CLIENT", "N/A"],
                        ["SNMPV2_TRAP", "N/A"],
                        ["SNMPV3_TRAP", "N/A"],
-                       ["NTP_CLIENT", "N/A"]])
+                       ["NTP_CLIENT", "N/A"],
+                       ["SYSLOG_CLIENT", "N/A"]])
 
 # Build pyATS Testbed environment from the secrets file configuration settings
 testbed_data = { 'TEST_DEVICE':TEST_DEVICE, 'TEST_DEVICE_HOSTNAME':TEST_DEVICE_HOSTNAME, 
@@ -98,10 +99,7 @@ if SSH_SERVER:
            TEST_DEVICE + ' from mav6: ' + mav6_ip
     print(colored(msg, "yellow"))
 
-    ssh_test_device = connect_host(TEST_DEVICE, TEST_DEVICE_HOSTNAME, 
-                                   
-                                   
-                                   CLI_USER, CLI_PASS, 'ssh')
+    ssh_test_device = connect_host(TEST_DEVICE, TEST_DEVICE_HOSTNAME, CLI_USER, CLI_PASS, 'ssh')
     
     if (ssh_test_device == None):
         print(colored("SSH Server Test Failed", "red"))
@@ -498,10 +496,10 @@ if SYSLOG_CLIENT:
     # Print Test results to screen
     if (result):
         print(colored("Syslog Client Test Successful\n\n", "green"))
-        test_array[22][1] = "PASS"
+        test_array[23][1] = "PASS"
     else:
         print(colored("Syslog Client Test Failed\n\n", "red"))
-        test_array[22][1] = "FAIL"
+        test_array[23][1] = "FAIL"
   
         
 server_test_results(test_array)
