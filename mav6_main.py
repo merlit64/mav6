@@ -60,7 +60,7 @@ render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data=testbed_data)
 # Render device pack os.yaml file and data from secrets file into a device configuraiton dictionary
 # This will help us send device configuration to the test device before each test that 
 # requires a certain configuration
-dp_filename = 'device/packs/' + TEST_DEVICE_OS + '.yaml'
+dp_filename = 'device_packs/' + TEST_DEVICE_OS + '.yaml'
 dp_file = open(dp_filename, 'r')
 dp_template_str = dp_file.read()
 dp_file.close()
