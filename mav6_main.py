@@ -127,16 +127,18 @@ if SSH_SERVER:
     
 # SCP Server Test
 if SCP_SERVER:
-    # Create a txt file to transfer on the router
-    command = 'show netconf counters | append from_testdevice.txt'
-    device.execute(command)
-    
-    # configure the test device as an scp server
-    device.configure('ip scp server enable')
-
     msg = '\nAttempting SCP server download from TEST_DEVICE: ' + \
            TEST_DEVICE + ' to ' + mav6_ip
     print(colored(msg, "yellow"))
+
+    # Create a txt file to transfer on the router
+    #command = 'show netconf counters | append from_testdevice.txt'
+    #device.execute(command)
+    
+    # configure the test device as an scp server
+    configure_test_device(device, config_dict, test='SCP_SERVER')
+    #device.configure('ip scp server enable')
+
     result = tftpscp_server_download(TEST_DEVICE, port=443, filename='from_testdevice.txt',
                             username=CLI_USER, password=CLI_PASS)
 
@@ -150,17 +152,19 @@ if SCP_SERVER:
 # TFTP Server Test
 
 if TFTP_SERVER:
-    # Connect to device and create a file on the flash
-    command = 'show netconf counters | append from_testdevice.txt'
-    device.execute(command)
-    
-    # configure the test device as a tftp-server
-    device.configure('tftp-server flash:from_testdevice.txt')
-    
-    # Attempt download
     msg = '\nAttempting TFTP server download from TEST_DEVICE: ' + \
            TEST_DEVICE + ' to ' + mav6_ip
     print(colored(msg, "yellow"))
+
+    # Connect to device and create a file on the flash
+    #command = 'show netconf counters | append from_testdevice.txt'
+    #device.execute(command)
+    
+    # configure the test device as a tftp-server
+    #device.configure('tftp-server flash:from_testdevice.txt')
+    configure_test_device(device, config_dict, test='TFTP_SERVER')
+    
+    # Attempt download
     result = tftpscp_server_download(TEST_DEVICE, port=69, filename='from_testdevice.txt')
 
     if (result):
@@ -172,13 +176,14 @@ if TFTP_SERVER:
 
 # HTTP Server Test
 if HTTP_SERVER:
+    msg = '\nAttempting HTTP connection to TEST_DEVICE: ' + \
+           TEST_DEVICE + ' from mav6: ' + mav6_ip
+    print(colored(msg, "yellow"))
+
     # Configure device
     configure_test_device(device, config_dict, test='HTTP_SERVER')
     sleep(10)
 
-    msg = '\nAttempting HTTP connection to TEST_DEVICE: ' + \
-           TEST_DEVICE + ' from mav6: ' + mav6_ip
-    print(colored(msg, "yellow"))
     result = http_test(TEST_DEVICE)
 
     if (result=='200'):
@@ -191,15 +196,13 @@ if HTTP_SERVER:
 
 # HTTPS Server Test
 if HTTPS_SERVER:
-    # Configure device
-    configure_test_device(device, config_dict, test='HTTPS_SERVER')
-
-    #device.configure('ip http server')
-    #device.configure('ip http secure-server')
-    sleep(10)
-
     msg = '\nAttempting HTTPS connection to ' + TEST_DEVICE + ' from mav6: ' + mav6_ip
     print(colored(msg, "yellow"))
+
+    # Configure device
+    configure_test_device(device, config_dict, test='HTTPS_SERVER')
+    sleep(10)
+
     result = http_test(TEST_DEVICE, verify=False)
     
     if (result=='200'):
@@ -211,12 +214,13 @@ if HTTPS_SERVER:
 
 # SNMP v2 Read Test
 if SNMPV2_READ:
-    # Configure device
-    configure_test_device(device, config_dict, test='SNMPV2_READ')
-
     msg = '\nAttempting SNMPv2 read request to TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
     print(colored(msg, "yellow"))
+
+    # Configure device
+    configure_test_device(device, config_dict, test='SNMPV2_READ')
+
     result = snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, version = "v2", 
               action = "read", community=COM_RO )
 
@@ -229,12 +233,13 @@ if SNMPV2_READ:
 
 # SNMP v2 Write Test
 if SNMPV2_WRITE:
-    # Configure device
-    configure_test_device(device, config_dict, test='SNMPV2_WRITE')
-
     msg = '\nAttempting SNMPv2 write  to TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
     print(colored(msg, "yellow"))
+
+    # Configure device
+    configure_test_device(device, config_dict, test='SNMPV2_WRITE')
+
     result = snmp_call( TEST_DEVICE, 'SNMPv2-MIB', 'sysContact', 0, mib_value="mav6 snmpv2test worked", 
               version = "v2", action = "write", community=COM_RW )
 
@@ -247,13 +252,13 @@ if SNMPV2_WRITE:
 
 # SNMP v3 Read Test
 if SNMPV3_READ:
-    # Configure device
-    configure_test_device(device, config_dict, test='SNMPV3_READ')
-    
     msg = '\nAttempting SNMPv3 read request to TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
     print(colored(msg, "yellow"))
 
+    # Configure device
+    configure_test_device(device, config_dict, test='SNMPV3_READ')
+    
     result = snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "read", 
           userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
@@ -266,12 +271,12 @@ if SNMPV3_READ:
 
 # SNMP v3 Write Test
 if SNMPV3_WRITE:
-    # Configure device
-    configure_test_device(device, config_dict, test='SNMPV3_WRITE')
-
     msg = '\nAttempting SNMPv3 write to TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
     print(colored(msg, "yellow"))
+
+    # Configure device
+    configure_test_device(device, config_dict, test='SNMPV3_WRITE')
 
     result = snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, mib_value="mav6", version = "v3", action = "write", 
           userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
@@ -285,14 +290,14 @@ if SNMPV3_WRITE:
 
 # NTP v4 Server Test
 if NTP_SERVER:
-    # Configure device
-    configure_test_device(device, config_dict, test='NTP_SERVER')
-
-    # Send NTP version 4 request over ipv4 or ipv6
     msg = '\nAttempting NTPv4 connection  to TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
     print(colored(msg, "yellow"))
 
+    # Configure device
+    configure_test_device(device, config_dict, test='NTP_SERVER')
+
+    # Send NTP version 4 request over ipv4 or ipv6
     result = ntp_call(ip=TEST_DEVICE)
 
     if (result):
@@ -416,12 +421,13 @@ if HTTPS_CLIENT:
 
 # SNMP v2 Trap Test
 if SNMPV2_TRAP:
-    # Configure Device
-    configure_test_device(device, config_dict, test='SNMPV2_TRAP')
-
     msg = '\nAttempting to send an SNMPv2 trap from TEST_DEVICE: ' + \
            TEST_DEVICE + ' to mav6: ' + mav6_ip
     print(colored(msg, "yellow"))
+
+    # Configure Device
+    configure_test_device(device, config_dict, test='SNMPV2_TRAP')
+    sleep(30)
 
     result = snmp_trap_client(snmp_version=2, comm_uname=COM_RW, mav6_ip=mav6_ip, 
                               device=device)
@@ -436,13 +442,14 @@ if SNMPV2_TRAP:
 
 # SNMP v3 Trap Test
 if SNMPV3_TRAP:
-    # Configure device
-    configure_test_device(device, config_dict, test='SNMPV3_TRAP')
-
     msg = '\nAttempting to send an SNMPv3 trap from TEST_DEVICE: ' + \
            TEST_DEVICE + ' to mav6: ' + mav6_ip
     print(colored(msg, "yellow"))
     
+    # Configure device
+    configure_test_device(device, config_dict, test='SNMPV3_TRAP')
+    sleep(30)
+
     result = snmp_trap_client(snmp_version=3, comm_uname=COM_RW, mav6_ip=mav6_ip, 
                               device=device)
 
@@ -471,8 +478,11 @@ if NTP_CLIENT:
 
 # Syslog Client Test
 if SYSLOG_CLIENT:
+    msg = '\nAttempting to send a Syslog message from TEST_DEVICE: ' + \
+           TEST_DEVICE + ' to mav6: ' + mav6_ip
+    print(colored(msg, "yellow"))
+    
     # Configure device
-
     if (ip_version(mav6_ip) == 6):
         configure_test_device(device, config_dict, test='SYSLOG_CLIENT', td_configure='td_ipv6_configure')
         #device.configure('logging host ipv6 ' + mav6_ip )
@@ -480,10 +490,6 @@ if SYSLOG_CLIENT:
         configure_test_device(device, config_dict, test='SYSLOG_CLIENT', td_configure='td_ipv4_configure')
         #device.configure('logging host ' + mav6_ip )
 
-    msg = '\nAttempting to send a Syslog message from TEST_DEVICE: ' + \
-           TEST_DEVICE + ' to mav6: ' + mav6_ip
-    print(colored(msg, "yellow"))
-    
     result = syslog_client( mav6_ip=mav6_ip, device=device, protocol='syslog')
 
     # Print Test results to screen

@@ -1,8 +1,13 @@
 tests:
+  SCP_SERVER:
+    td_execute: |
+      show netconf counters | append from_testdevice.txt
+    td_configure: |
+      ip scp server enable
   TFTP_SERVER:
     td_execute: |
       show netconf counters | append from_testdevice.txt
-    td_config: |
+    td_configure: |
       tftp-server flash:from_testdevice.txt
   HTTP_SERVER:
     td_configure: |

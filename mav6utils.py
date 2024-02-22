@@ -189,7 +189,8 @@ def server_test_results(server_results_array):
     
 def configure_test_device(device, config_dict, test, 
                           td_configure='td_configure', td_execute='td_execute'):
+    print('Configuring test device in preparation for ' + test + ' test using device pack')
     if 'td_execute' in config_dict['tests'][test]:
         device.execute(config_dict['tests'][test][td_execute])
-    if 'td_configure' in config_dict['tests'][test]:
+    if td_configure in config_dict['tests'][test]:
         device.configure(config_dict['tests'][test][td_configure])
