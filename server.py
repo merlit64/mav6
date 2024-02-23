@@ -120,18 +120,16 @@ def snmp_call( ip, module, parent, suffix, mib_value=None, port= 161, version = 
 
     # Display error or Success messages
     if errorIndication:  # SNMP engine errors
-        print(colored("SNMP" + version + " " + action + " Failed.  Error message:", "red"))
+        print('Error indication below:')
         print(errorIndication)
         return False
     else:
         if errorStatus:  # SNMP agent errors
-            #print(colored("SNMP" + version + " " + action + " Failed.  Error message:", "red"))
-            #print('%s at %s' % (errorStatus.prettyPrint(), varBinds[int(errorIndex)-1] if errorIndex else '?'))
+            print('%s at %s' % (errorStatus.prettyPrint(), varBinds[int(errorIndex)-1] if errorIndex else '?'))
             return False
         else:
             for varBind in varBinds:  # SNMP response contents
-                #print(colored("SNMP" + version + " " + action + " Succeeded!.  Results are below:", "green"))
-                #print(' = '.join([x.prettyPrint() for x in varBind]))
+                print(' = '.join([x.prettyPrint() for x in varBind]))
                 return True
 
 
@@ -158,16 +156,22 @@ def tftpscp_server_download( ip, port=69, filename='test.cfg', username='', pass
     if ( port == 443): # SCP over v4 or v6
         print('attempting scp download from test device at ' + ip)
         command = 'sshpass -p "' + password + '" scp ' + username + \
-            '@[' + ip + ']:flash:/from_testdevice.txt from_testdevice.txt'
+            '@[' + ip + ']:bootflash:/from_testdevice.txt from_testdevice.txt'
         os.system(command)
     elif ( ip_version(ip) == 4 and port != 443): # TFP over v4
-        client = TftpClient(ip, port)
-        print('attempting tftp download from test device at ' + ip)
-        client.download(filename, filename)
+        try:
+            client = TftpClient(ip, port)
+            print('attempting tftp download from test device at ' + ip)
+            client.download(filename, filename)
+        except:
+            return False
     elif (ip_version(ip) == 6 and port != 443):
-        client = TftpClient(ip, port, af_family=socket.AF_INET6 )
-        print('attempting tftp download from test device at ' + ip)
-        client.download(filename, filename)
+        try:
+            client = TftpClient(ip, port, af_family=socket.AF_INET6 )
+            print('attempting tftp download from test device at ' + ip)
+            client.download(filename, filename)
+        except:
+            return False
     else:
         return False
 

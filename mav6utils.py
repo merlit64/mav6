@@ -22,9 +22,9 @@ testbed:
   
 devices:
   {{ TEST_DEVICE_HOSTNAME }}:
-    os: iosxe
-    type: c9000
-    platform: c9000
+    os: {{ TEST_DEVICE_OS }}
+    #type: c9000
+    #platform: c9000
     credentials:
       default:
         password: '{{ CLI_PASS }}'
@@ -166,7 +166,8 @@ def render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data={}, testb
 
     # Render the pyATS YAML file
     t = Template(testbed_template)
-    testbed_yaml = t.render(TEST_DEVICE = TEST_DEVICE, TEST_DEVICE_HOSTNAME = TEST_DEVICE_HOSTNAME, CLI_USER = CLI_USER, CLI_PASS=CLI_PASS)
+    testbed_yaml = t.render(TEST_DEVICE = TEST_DEVICE, TEST_DEVICE_HOSTNAME = TEST_DEVICE_HOSTNAME, 
+                            CLI_USER = CLI_USER, CLI_PASS=CLI_PASS, TEST_DEVICE_OS=TEST_DEVICE_OS)
 
     # Save the YAML file
     yaml_file = open(testbed_filename, 'w')
@@ -190,7 +191,8 @@ def server_test_results(server_results_array):
 def configure_test_device(device, config_dict, test, 
                           td_configure='td_configure', td_execute='td_execute'):
     print('Configuring test device in preparation for ' + test + ' test using device pack')
-    if 'td_execute' in config_dict['tests'][test]:
-        device.execute(config_dict['tests'][test][td_execute])
-    if td_configure in config_dict['tests'][test]:
-        device.configure(config_dict['tests'][test][td_configure])
+    if test in config_dict['tests']:
+        if 'td_execute' in config_dict['tests'][test]:
+            device.execute(config_dict['tests'][test][td_execute])
+        if td_configure in config_dict['tests'][test]:
+            device.configure(config_dict['tests'][test][td_configure])

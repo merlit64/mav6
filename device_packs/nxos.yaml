@@ -1,0 +1,55 @@
+tests:
+  SCP_SERVER:
+    td_execute: |
+      show int eth1/1 brief >> from_testdevice.txt
+    td_configure: |
+      feature scp-server
+  TFTP_SERVER:
+    # TFTP Server functionality not supported on NXOS!
+    support: |
+      False
+  HTTP_SERVER:
+    # HTTP Server functionality not supported on NXOS!
+    support: |
+      False
+  HTTPS_SERVER:
+    # HTTPS Server functionality not supported on NXOS!
+    support: |
+      False
+  SNMPV2_READ:
+    td_configure: |
+      snmp-server community {{COM_RO}} ro
+  SNMPV2_WRITE:
+    td_configure: |
+      snmp-server community {{COM_RW}} rw
+  SNMPV3_READ:
+    td_configure: |
+      no snmp-server user {{SNMP_USER}}
+      snmp-server user {{SNMP_USER}} network-admin
+  SNMPV3_WRITE:
+    td_configure: |
+      no snmp-server user {{SNMP_USER}}
+      snmp-server user {{SNMP_USER}} network-admin 
+  NTP_SERVER:
+    td_configure: |
+      ntp master
+  SNMPV2_TRAP:
+    td_configure: |
+      snmp-server community {{COM_RW}} rw
+      snmp-server enable traps
+      snmp-server enable traps config
+      snmp-server host {{mav6_ip}} traps version 2c {{COM_RW}} udp-port 162 config
+  SNMPV3_TRAP:
+    td_configure: |
+      no snmp-server user mav6user mav6group v3
+      no snmp-server group mav6group v3 priv
+      snmp-server group mav6group v3 noauth
+      snmp-server user mav6user mav6group v3
+      snmp-server enable traps
+      snmp-server enable traps config
+      snmp-server host {{mav6_ip}} ver 3 noauth mav6user
+  SYSLOG_CLIENT:
+    td_ipv4_configure: |
+      logging host {{mav6_ip}}
+    td_ipv6_configure: |
+      logging host ipv6 {{mav6_ip}}

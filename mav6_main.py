@@ -54,7 +54,7 @@ mav6_ip = MAV6_IPV4 if ip_version(TEST_DEVICE) == 4 else MAV6_IPV6
 testbed_data = { 'TEST_DEVICE':TEST_DEVICE, 'TEST_DEVICE_HOSTNAME':TEST_DEVICE_HOSTNAME, 
                  'CLI_USER':CLI_USER, 'CLI_PASS':CLI_PASS, 'COM_RO':COM_RO, 'COM_RW':COM_RW,
                  'SNMP_USER':SNMP_USER, 'AUTH_KEY':AUTH_KEY, 'PRIV_KEY':PRIV_KEY, 
-                 'mav6_ip':mav6_ip}
+                 'mav6_ip':mav6_ip, 'TEST_DEVICE_OS':TEST_DEVICE_OS, 'NTP_TEST_SERVER':NTP_TEST_SERVER}
 render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data=testbed_data)
 
 # Render device pack os.yaml file and data from secrets file into a device configuraiton dictionary
@@ -226,7 +226,7 @@ if SNMPV2_READ:
     # Configure the test device to service snmpv2 read requests
     configure_test_device(device, config_dict, test='SNMPV2_READ')
 
-    result = snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, version = "v2", 
+    result = snmp_call( TEST_DEVICE, 'SNMPv2-MIB', 'sysContact', 0, version = "v2", 
               action = "read", community=COM_RO )
 
     if (result):
@@ -246,7 +246,7 @@ if SNMPV2_WRITE:
     # Configure the test device to service snmpv2 write requests
     configure_test_device(device, config_dict, test='SNMPV2_WRITE')
 
-    result = snmp_call( TEST_DEVICE, 'SNMPv2-MIB', 'sysContact', 0, mib_value="mav6 snmpv2test worked", 
+    result = snmp_call( TEST_DEVICE, 'SNMPv2-MIB', 'sysContact', 0, mib_value="mav6 SNMPV2_WRITE successful", 
               version = "v2", action = "write", community=COM_RW )
 
     if (result):
@@ -266,7 +266,7 @@ if SNMPV3_READ:
     # Configure the test device to service snmpv3 read requests
     configure_test_device(device, config_dict, test='SNMPV3_READ')
     
-    result = snmp_call( TEST_DEVICE, 'IF-MIB', 'ifInOctets', 1, version = "v3", action = "read", 
+    result = snmp_call( TEST_DEVICE, 'SNMPv2-MIB', 'sysContact', 0, version = "v3", action = "read", 
           userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
 
     if (result):
@@ -286,8 +286,8 @@ if SNMPV3_WRITE:
     # Configure the test device to service snmpv3 write requests
     configure_test_device(device, config_dict, test='SNMPV3_WRITE')
 
-    result = snmp_call( TEST_DEVICE, 'IF-MIB', 'ifAlias', 1, mib_value="mav6", version = "v3", action = "write", 
-          userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY  )
+    result = snmp_call( TEST_DEVICE, 'SNMPv2-MIB', 'sysContact', 0, mib_value="mav6 SNMPV3_WRITE successful", 
+                       version = "v3", action = "write", userName=SNMP_USER, authKey=AUTH_KEY, privKey=PRIV_KEY)
 
     if (result):
         print(colored("SNMP V3 Write Test Success", "green"))
@@ -485,7 +485,11 @@ if NTP_CLIENT:
     msg = '\nAttempting an NTPv4 connection from TEST_DEVICE: ' + \
            TEST_DEVICE + ' to NTP_TEST_SERVER: ' + NTP_TEST_SERVER
     print(colored(msg, "yellow"))
-    
+
+    # Configure test device as ntp client
+    configure_test_device(device, config_dict, test='NTP_CLIENT')
+    sleep(15)
+
     result = ntp_client(device, NTP_TEST_SERVER)
 
     if (result):

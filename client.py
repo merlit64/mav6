@@ -154,17 +154,19 @@ def ssh_client(device, server_ip, user, secret):
         return False
         
 def ntp_client(device='', ntp_server=''):
-    
-    ntp_config = [ntp_server]
-    print(colored('Attempting NTP server configuration...', 'yellow'))
-    configure_ntp_server(device, ntp_config)
-    output = device.execute("show run | include ntp")
-    if (len(output) == 0):
-        return False
+    show_run = device.execute("show run | include ntp")
+    show_ntp_assoc = device.execute("show ntp associations")
+    if (ntp_server in show_run):
+        if '*~' in show_ntp_assoc:
+            print('NTP server configure and associated: \n' + show_ntp_assoc)
+            return True
+        else:
+            print('NTP server configure but not associated: \n' + output2)
+            print('It may take more time for the ntp client to associate to the server.')
+            return False
     else:
-        message = 'NTP server configuration passed: ' + output
-        print(colored(message, 'green'))
-        return True
+        return False
+
     
 
 def snmp_trap_send(destination='', port=162, snmp_version = 2):
