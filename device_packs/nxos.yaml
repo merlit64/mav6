@@ -1,21 +1,18 @@
 tests:
+  PING_SERVER: true
+  TELNET_SERVER: true
+  SSH_SERVER: true
   SCP_SERVER:
     td_execute: |
       show int eth1/1 brief >> from_testdevice.txt
     td_configure: |
       feature scp-server
-  TFTP_SERVER:
-    # TFTP Server functionality not supported on NXOS!
-    support: |
-      False
-  HTTP_SERVER:
+  TFTP_SERVER: false
+    #TFTP Server functionality not supported on NXOS!
+  HTTP_SERVER: false
     # HTTP Server functionality not supported on NXOS!
-    support: |
-      False
-  HTTPS_SERVER:
+  HTTPS_SERVER: false
     # HTTPS Server functionality not supported on NXOS!
-    support: |
-      False
   SNMPV2_READ:
     td_configure: |
       snmp-server community {{COM_RO}} ro
@@ -25,31 +22,44 @@ tests:
   SNMPV3_READ:
     td_configure: |
       no snmp-server user {{SNMP_USER}}
-      snmp-server user {{SNMP_USER}} network-admin
+      snmp-server user {{SNMP_USER}} network-admin auth sha {{AUTH_KEY}} priv aes-128 {{PRIV_KEY}}
   SNMPV3_WRITE:
     td_configure: |
       no snmp-server user {{SNMP_USER}}
-      snmp-server user {{SNMP_USER}} network-admin 
+      snmp-server user {{SNMP_USER}} network-admin auth sha {{AUTH_KEY}} priv aes-128 {{PRIV_KEY}}
   NTP_SERVER:
     td_configure: |
       ntp master
+  PING_CLIENT: true
+  TELNET_CLIENT: true
+  SSH_CLIENT: true
+  TFTP_CLIENT: true
+  FTP_CLIENT: true
+  HTTP_CLIENT: true
+  HTTPS_CLIENT: false
+  # HTTPS_CLIENT test currently not supported by mav6 for nxos
   SNMPV2_TRAP:
     td_configure: |
       snmp-server community {{COM_RW}} rw
       snmp-server enable traps
       snmp-server enable traps config
-      snmp-server host {{mav6_ip}} traps version 2c {{COM_RW}} udp-port 162 config
+      snmp-server host {{mav6_ip}} traps version 2c {{COM_RW}}
+      snmp-server host {{mav6_ip}} use-vrf default
   SNMPV3_TRAP:
     td_configure: |
-      no snmp-server user mav6user mav6group v3
-      no snmp-server group mav6group v3 priv
-      snmp-server group mav6group v3 noauth
-      snmp-server user mav6user mav6group v3
+      no snmp-server host {{mav6_ip}} {{SNMP_USER}}
+      no snmp-server user {{SNMP_USER}}
+      no snmp-server engineID local 80:00:00:09:99:00:00:09:87:65:43:21
+      snmp-server engineID local 80:00:00:09:99:00:00:09:87:65:43:21
+      snmp-server user {{SNMP_USER}} network-admin auth sha {{AUTH_KEY}} priv aes-128 {{PRIV_KEY}}
       snmp-server enable traps
       snmp-server enable traps config
-      snmp-server host {{mav6_ip}} ver 3 noauth mav6user
+      snmp-server host {{mav6_ip}} ver 3 priv {{SNMP_USER}}
+  NTP_CLIENT: 
+    td_configure: |
+      ntp server {{NTP_TEST_SERVER}} prefer use-vrf default
   SYSLOG_CLIENT:
     td_ipv4_configure: |
-      logging host {{mav6_ip}}
+      logging server {{mav6_ip}} use-vrf default
     td_ipv6_configure: |
-      logging host ipv6 {{mav6_ip}}
+      logging server {{mav6_ip}} use-vrf default

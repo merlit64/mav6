@@ -99,14 +99,17 @@ def file_on_flash(device, filename='test.txt'):
         return True
 
 
-def del_from_flash(device, filename='test.txt'):
+def del_from_flash(device, filename='test.txt', os='iosxe'):
     # Deletes a file from the flash
     # Returns True if file was succeesfully delted, False if not
     # device - pyATS device object
     # filename - Name of the file to delete
 
     # USE PYATS DELETE FUNCTION INSTEAD
-    result = device.execute('del ' + filename + '\n\n\n')
+    if os == 'nxos':
+        result = device.execute('del ' + filename + ' no-prompt')
+    else:
+        result = device.execute('del ' + filename + '\n\n\n')
     print(result)
     if ('Error deleting' in result):
         return False
@@ -191,8 +194,10 @@ def server_test_results(server_results_array):
 def configure_test_device(device, config_dict, test, 
                           td_configure='td_configure', td_execute='td_execute'):
     print('Configuring test device in preparation for ' + test + ' test using device pack')
-    if test in config_dict['tests']:
-        if 'td_execute' in config_dict['tests'][test]:
-            device.execute(config_dict['tests'][test][td_execute])
-        if td_configure in config_dict['tests'][test]:
-            device.configure(config_dict['tests'][test][td_configure])
+    if test in config_dict:
+        if 'td_execute' in config_dict[test]:
+            print('Pre-test Test Device command executiion:\n' + config_dict[test][td_execute] )
+            device.execute(config_dict[test][td_execute])
+        if td_configure in config_dict[test]:
+            print('Pre-test Test Device configuration:\n' + config_dict[test][td_configure] )
+            device.configure(config_dict[test][td_configure])

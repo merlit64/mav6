@@ -1,5 +1,6 @@
 from mav6utils import *
 from time import sleep
+import random
 from termcolor import colored
 from multiprocessing import Process, Queue
 
@@ -22,17 +23,20 @@ from embedded_fs import *
 from ca import *
 
 
-def ping_client(device = '', device_to_ping=''):
+def ping_client(device = '', device_to_ping='', test_device_os='iosxe'):
     # ping_client connects to the test device and tries to ping an
     #   ip address from there.
-    ping_result = device.ping(device_to_ping)
+    if (ip_version(device_to_ping) == 6) and test_device_os == 'nxos':
+        ping_result = device.ping6(device_to_ping)
+    else:
+        ping_result = device.ping(device_to_ping)
     print(ping_result)
-    if ('!!!!' in ping_result ):
+    if ('!!!!' in ping_result or '5 packets received' in ping_result or '4 packets received' in ping_result ):
         return True
     else:
         return False
 
-def perform_ssh(device, ip_address, username, password):
+def perform_ssh(device, ip_address, username, password, test_device_os='iosxe'):
     
     ssh_dict = {
                 'pass_timeout_expire_flag': False,
@@ -42,6 +46,9 @@ def perform_ssh(device, ip_address, username, password):
 
     def pass_timeout_expire():
         ssh_dict['pass_timeout_expire_flag'] = True
+
+    def send_yes(spawn):
+        spawn.sendline('yes')
 
     def send_pass(spawn):
         spawn.sendline(password)
@@ -58,7 +65,13 @@ def perform_ssh(device, ip_address, username, password):
             Statement(pattern=r"Password:\s*timeout expired!",
                       action=pass_timeout_expire,
                       loop_continue=False),
+            Statement(pattern=r"continue connecting (yes/no)?",
+                      action=send_yes,
+                      loop_continue=True),
             Statement(pattern=r"Password:",
+                      action=send_pass,
+                      loop_continue=True),
+            Statement(pattern=r"password:",
                       action=send_pass,
                       loop_continue=True),
             Statement(pattern=r'Welcome to Ubuntu',
@@ -67,9 +80,13 @@ def perform_ssh(device, ip_address, username, password):
 
     ])
 
-    cmd = f'ssh -l {username}'
+    if test_device_os == 'nxos':
+        cmd = f'ssh {username}@'
+    else:
+        cmd = f'ssh -l {username} '
 
-    cmd += f' {ip_address}'
+
+    cmd += f'{ip_address}'
 
     try:
         device.execute(cmd, reply=dialog, prompt_recovery=True, timeout=40)
@@ -146,23 +163,27 @@ def telnet_client(device, server_ip, user, secret):
         return False
 
 
-def ssh_client(device, server_ip, user, secret):
+def ssh_client(device, server_ip, user, secret, test_device_os='iosxe'):
     # ssh client test function
-    if (perform_ssh(device, server_ip, user, secret)):
+    if (perform_ssh(device, server_ip, user, secret, test_device_os)):
         return True
     else:
         return False
         
-def ntp_client(device='', ntp_server=''):
+def ntp_client(device='', ntp_server='', test_device_os='iosxe'):
     show_run = device.execute("show run | include ntp")
-    show_ntp_assoc = device.execute("show ntp associations")
+    if test_device_os == 'nxos':
+        show_ntp_assoc = device.execute("show ntp peer-status")
+    else:
+        show_ntp_assoc = device.execute("show ntp associations")
     if (ntp_server in show_run):
-        if '*~' in show_ntp_assoc:
+        if (('*~' + ntp_server) in show_ntp_assoc) or (('*' + ntp_server) in show_ntp_assoc):
             print('NTP server configure and associated: \n' + show_ntp_assoc)
             return True
         else:
-            print('NTP server configure but not associated: \n' + output2)
+            print('NTP server configure but not associated: \n' + show_ntp_assoc)
             print('It may take more time for the ntp client to associate to the server.')
+            print('or you may need to remove another ntp server.')
             return False
     else:
         return False
@@ -227,7 +248,7 @@ def snmp_trap_client(snmp_version=2, comm_uname='', mav6_ip='', device='' ):
 
     q = Queue()
     snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
-                                         args=(q,2, mav6_ip,162,comm_uname))
+                                         args=(q,snmp_version, mav6_ip,162,comm_uname))
 
     print('starting snmp trap receiver process, version ' + str(snmp_version))
     snmp_trap_receiver_process.start()
@@ -238,14 +259,15 @@ def snmp_trap_client(snmp_version=2, comm_uname='', mav6_ip='', device='' ):
     # Trigger an event to send a trap
     print('Triggering Test Device to send a trap')
     if snmp_version == 2:
-        device.configure ('')
+        device.configure ('banner motd c ' + str(random.randint(0,999999)) + ' c')
     elif snmp_version == 3:
-        device.configure ('')
+        device.configure('')
+        device.configure ('banner motd c ' + str(random.randint(0,999999)) + ' c')
     else:
         print('That version of SNMP does not exist')
         SystemExit()
 
-    sleep(5)    
+    sleep(10)    
 
     # Check the queue created by the SNMP receiver for a trap sent by TEST_DEVICE
     received_snmp = False
@@ -254,6 +276,9 @@ def snmp_trap_client(snmp_version=2, comm_uname='', mav6_ip='', device='' ):
         if('my system' in message):
             print('SNMP message arrived at receiver from snmp_trap_send test function') 
         elif('netconf' in message):
+            print('SNMP message arrived at receiver from TEST_DEVICE')
+            received_snmp = True
+        elif('1.3.6.1.4.1.9.9.43.2.0.2' in message):
             print('SNMP message arrived at receiver from TEST_DEVICE')
             received_snmp = True
         else:
@@ -283,27 +308,34 @@ def filetransfer_client_download(device='', server_ip='', transfer_protocol='tft
     # setup dialog
     def dest_filename_request(spawn):
         spawn.sendline('')
+        print('dest_filename_request')
+    def vrf_request(spawn):
+        spawn.sendline('default')
+        print('vrf_request')
     dialog = Dialog([
         Statement(pattern=r"Destination filename",
                   action=dest_filename_request,
+                  loop_continue=True),
+        Statement(pattern=r"is considered",
+                  action=vrf_request,
                   loop_continue=True)
     ])
     
     # send copy command
     if (transfer_protocol == 'tftp'):
-        cmd = 'copy tftp://' + server_ip + '/test.txt flash:/test.txt' 
+        cmd = 'copy tftp://' + server_ip + '/test.txt bootflash:/test.txt' 
         device.execute(cmd, reply=dialog, prompt_recovery=True, timeout=40)
         sleep(5)
     elif (transfer_protocol == 'ftp'):
-        cmd = 'copy ftp://paul:elephant060@' + server_ip + '/test.txt flash:/' 
+        cmd = 'copy ftp://paul:elephant060@' + server_ip + '/test.txt bootflash:/' 
         device.execute(cmd, reply=dialog, prompt_recovery=True, timeout=40)
         sleep(5)
     elif (transfer_protocol == 'http'):
-        cmd = 'copy http://' + server_ip + '/test.txt flash:/' 
+        cmd = 'copy http://' + server_ip + '/test.txt bootflash:/' 
         device.execute(cmd, reply=dialog, prompt_recovery=True, timeout=40)
         sleep(5)
     elif (transfer_protocol == 'https'):
-        cmd = 'copy https://' + server_ip + '/test.txt flash:/' 
+        cmd = 'copy https://' + server_ip + '/test.txt bootflash:/' 
         device.execute(cmd, reply=dialog, prompt_recovery=True, timeout=40)
         sleep(5)
     else:
@@ -312,10 +344,10 @@ def filetransfer_client_download(device='', server_ip='', transfer_protocol='tft
 
 
 def file_transfer_client(protocol='', device='', 
-                         mav6_ip='', ca_directory=''):
+                         mav6_ip='', ca_directory='', test_device_os='iosxe'):
     secured = True if (protocol == 'https') else False
     if(file_on_flash(device, filename='test.txt')):
-        del_from_flash(device, 'test.txt')
+        del_from_flash(device, 'test.txt', test_device_os)
 
     # Create CA on Mav6 and create a signed cert for Mav6 https server
     if secured:
@@ -350,7 +382,7 @@ def file_transfer_client(protocol='', device='',
     else:
         return False
     
-def syslog_client(mav6_ip='', device='', protocol='syslog'):
+def syslog_client(mav6_ip='', device='', protocol='syslog', test_device_os='iosxe'):
 
     q = Queue()
     embedded_server_process = Process(target=start_notification_server, name='embeddedserver', 
@@ -360,15 +392,33 @@ def syslog_client(mav6_ip='', device='', protocol='syslog'):
     embedded_server_process.start()
     sleep(5)
 
-    print("Triggering test device to send a syslog message")
-    device.configure('')
-    sleep(2)
+    print("Triggering test device to send a syslog message (up to 30s)")
+    if test_device_os == 'nxos':
+        # This will trigger for nxos
+        sleep(2)
+        device.configure('')
+        sleep(20)
+        device.configure('no logging rate-limit')
+        sleep(2)
+        device.configure('logging rate-limit')
+        sleep(2)
+        if q.empty():
+            print('Test failed, trying again (up to 30s)')
+            sleep(20)
+            device.configure('no logging rate-limit')
+            sleep(2)
+            device.configure('logging rate-limit')
+            sleep(2)
+    else:
+        # This will trigger for iosxe
+        device.configure('')
     
     result=False
     while(not q.empty()):
         message = q.get()
-        if "Configured from console" in message:
+        if "Configured from" in message:
             result = True
+            break
     
     embedded_server_process.kill()
     sleep(2)

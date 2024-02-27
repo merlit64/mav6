@@ -120,7 +120,8 @@ def snmp_start_trap_receiver(q, snmp_version=2, ip='', port=162, community=''):
             print('Receiver: ' + name.prettyPrint() + ' = ' + val.prettyPrint())
             q.put(name.prettyPrint() + ' = ' + val.prettyPrint())
 
-    snmp_engine = engine.SnmpEngine(rfc1902.OctetString(hexValue='80000009030000c1b1129980'))
+    snmp_engine = engine.SnmpEngine()
+    # rfc1902.OctetString(hexValue='80000009030000c1b1129980')
     if (ip_version(ip) == 4):
         print('Using IPv4 as a Transport on receiver')
         config.addTransport(snmp_engine, udp.domainName, 
@@ -135,7 +136,16 @@ def snmp_start_trap_receiver(q, snmp_version=2, ip='', port=162, community=''):
         config.addV1System(snmp_engine, 'my-area', community)
     elif (snmp_version == 3):
         print('starting snmp trap receiver v3...')
-        config.addV3User(snmp_engine, 'mavuser')
+        #config.addV3User(snmp_engine, 'mavuser')
+        config.addV3User(snmp_engine, 'mav6user',
+                         authProtocol= config.usmHMACSHAAuthProtocol, authKey='C1sco123!',
+                         privProtocol= config.usmAesCfb128Protocol, privKey='C1sco123!',
+                         securityEngineId=rfc1902.OctetString(hexValue='800000099900000987654321') )
+        '''
+        config.addV3User(snmp_engine, 'mav6user',
+                         authProtocol= usmHMACSHAAuthProtocol, authKey='C1sco123!',
+                         privProtocol= usmAesCfb128Protocol, privKey='C1sco123!' )
+        '''
         '''
         config.addVacmUser(snmp_engine, 3, 'v3user', 'authPriv', 
                            (1,3,6,1,2,1), (1,3,6,1,2,1) )

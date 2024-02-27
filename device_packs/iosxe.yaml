@@ -1,4 +1,8 @@
 tests:
+  # Server tests
+  PING_SERVER: true
+  TELNET_SERVER: true
+  SSH_SERVER: true
   SCP_SERVER:
     td_execute: |
       show netconf counters | append from_testdevice.txt
@@ -45,6 +49,16 @@ tests:
   NTP_SERVER:
     td_configure: |
       ntp master
+
+  # Client Tests
+  PING_CLIENT: true
+  TELNET_CLIENT: true
+  SSH_CLIENT: true
+  SCP_CLIENT: true
+  TFTP_CLIENT: true
+  FTP_CLIENT: true
+  HTTP_CLIENT: true
+  HTTPS_CLIENT: true
   SNMPV2_TRAP:
     td_configure: |
       snmp-server community {{COM_RW}} rw
@@ -53,13 +67,17 @@ tests:
       snmp-server host {{mav6_ip}} traps version 2c {{COM_RW}} udp-port 162 config
   SNMPV3_TRAP:
     td_configure: |
-      no snmp-server user mav6user mav6group v3
+      no snmp-server host {{mav6_ip}} ver 3 priv {{SNMP_USER}}
+      no snmp-server user {{SNMP_USER}} mav6group v3
       no snmp-server group mav6group v3 priv
-      snmp-server group mav6group v3 noauth
-      snmp-server user mav6user mav6group v3
+      no snmp-server engineID local
+      snmp-server engineID local 800000099900000987654321
+      snmp-server group mav6group v3 priv
+      snmp-server user {{SNMP_USER}} mav6group v3 auth sha {{AUTH_KEY}} priv aes 128 {{PRIV_KEY}}
       snmp-server enable traps
       snmp-server enable traps config
-      snmp-server host {{mav6_ip}} ver 3 noauth mav6user
+      snmp-server host {{mav6_ip}} ver 3 priv {{SNMP_USER}}
+      snmp-server host {{mav6_ip}} use-vrf default
   NTP_CLIENT:
     td_configure: |
       ntp server {{NTP_TEST_SERVER}}

@@ -71,6 +71,7 @@ dp_yaml_str = dp.render(testbed_data)
 # and has a corresponding td_config which is a configuration that must be
 # pushed to the device before the test commences
 config_dict=yaml.safe_load(dp_yaml_str)
+config_dict = config_dict['tests']
 
 
 print(colored('\n\nInitiating TEST_DEVICE connection (approx 30s)', "blue"))
@@ -80,11 +81,11 @@ if (device == None):
     exit()
 
 
-### CLIENT TESTS ###
+### SERVER TESTS ###
 print(colored("\nExecuting Server Tests (where test box acts as the server):\n", "blue"))
 
 # Ping Server Test
-if PING_SERVER:
+if PING_SERVER and 'PING_SERVER' in config_dict and config_dict['PING_SERVER']:
     # Opening message for the test
     msg = '\nAttempting Ping of TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
@@ -99,7 +100,7 @@ if PING_SERVER:
         print(colored("Ping Server Test Failed", "red"))
         test_array[1][1] = "FAIL"
 # Telnet Server Test
-if TELNET_SERVER:
+if TELNET_SERVER and 'TELNET_SERVER' in config_dict and config_dict['TELNET_SERVER']:
     # Opening message for the test
     msg = '\nAttempting telnet to TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
@@ -119,7 +120,7 @@ if TELNET_SERVER:
     # Set device back to None so we connect via ssh for future tests
 
 # SSH Server Test
-if SSH_SERVER:
+if SSH_SERVER and 'SSH_SERVER' in config_dict and config_dict['SSH_SERVER']:
     # Opening message for the test
     msg = '\nAttempting ssh to TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
@@ -136,7 +137,7 @@ if SSH_SERVER:
     ssh_test_device.disconnect()
     
 # SCP Server Test
-if SCP_SERVER:
+if SCP_SERVER and 'SCP_SERVER' in config_dict and config_dict['SCP_SERVER']:
     # Opening message for the test
     msg = '\nAttempting SCP server download from TEST_DEVICE: ' + \
            TEST_DEVICE + ' to ' + mav6_ip
@@ -156,8 +157,7 @@ if SCP_SERVER:
         test_array[4][1] = "FAIL"
         
 # TFTP Server Test
-
-if TFTP_SERVER:
+if TFTP_SERVER and 'TFTP_SERVER' in config_dict and config_dict['TFTP_SERVER']:
     # Opening message for the test
     msg = '\nAttempting TFTP server download from TEST_DEVICE: ' + \
            TEST_DEVICE + ' to ' + mav6_ip
@@ -177,7 +177,7 @@ if TFTP_SERVER:
         test_array[5][1] = "FAIL"
 
 # HTTP Server Test
-if HTTP_SERVER:
+if HTTP_SERVER and 'HTTP_SERVER' in config_dict and config_dict['HTTP_SERVER']:
     # Opening message for the test
     msg = '\nAttempting HTTP connection to TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
@@ -198,7 +198,7 @@ if HTTP_SERVER:
         
 
 # HTTPS Server Test
-if HTTPS_SERVER:
+if HTTPS_SERVER and 'HTTPS_SERVER' in config_dict and config_dict['HTTPS_SERVER']:
     # Opening message for the test
     msg = '\nAttempting HTTPS connection to ' + TEST_DEVICE + ' from mav6: ' + mav6_ip
     print(colored(msg, "yellow"))
@@ -217,7 +217,7 @@ if HTTPS_SERVER:
         test_array[7][1] = "FAIL"
 
 # SNMP v2 Read Test
-if SNMPV2_READ:
+if SNMPV2_READ and 'SNMPV2_READ' in config_dict and config_dict['SNMPV2_READ']:
     # Opening message for the test
     msg = '\nAttempting SNMPv2 read request to TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
@@ -237,7 +237,7 @@ if SNMPV2_READ:
         test_array[8][1] = "FAIL"
 
 # SNMP v2 Write Test
-if SNMPV2_WRITE:
+if SNMPV2_WRITE and 'SNMPV2_WRITE' in config_dict and config_dict['SNMPV2_WRITE']:
     # Opening message for the test
     msg = '\nAttempting SNMPv2 write  to TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
@@ -257,7 +257,7 @@ if SNMPV2_WRITE:
         test_array[9][1] = "FAIL"
 
 # SNMP v3 Read Test
-if SNMPV3_READ:
+if SNMPV3_READ and 'SNMPV3_READ' in config_dict and config_dict['SNMPV3_READ']:
     # Opening message for the test
     msg = '\nAttempting SNMPv3 read request to TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
@@ -277,7 +277,7 @@ if SNMPV3_READ:
         test_array[10][1] = "FAIL"
 
 # SNMP v3 Write Test
-if SNMPV3_WRITE:
+if SNMPV3_WRITE and 'SNMPV3_WRITE' in config_dict and config_dict['SNMPV3_WRITE']:
     # Opening message for the test
     msg = '\nAttempting SNMPv3 write to TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
@@ -297,7 +297,7 @@ if SNMPV3_WRITE:
         test_array[11][1] = "FAIL"
 
 # NTP v4 Server Test
-if NTP_SERVER:
+if NTP_SERVER and 'NTP_SERVER' in config_dict and config_dict['NTP_SERVER']:
     # Opening message for the test
     msg = '\nAttempting NTPv4 connection  to TEST_DEVICE: ' + \
            TEST_DEVICE + ' from mav6: ' + mav6_ip
@@ -320,13 +320,13 @@ if NTP_SERVER:
 print(colored("\nExecuting Client Tests (where test box acts as the client):\n", "blue"))
 
 # Ping Client Test
-if PING_CLIENT:
+if PING_CLIENT and 'PING_CLIENT' in config_dict and config_dict['PING_CLIENT']:
     # Opening message for the test
     msg = '\nAttempting to  ping mav6: ' + \
            mav6_ip + ' from TEST_DEVICE: ' + TEST_DEVICE
     print(colored(msg, "yellow"))
     
-    result = ping_client(device, device_to_ping=mav6_ip)
+    result = ping_client(device, device_to_ping=mav6_ip, test_device_os=TEST_DEVICE_OS)
 
     if (result):
         print(colored("Ping Client Test Successful\n\n", "green"))
@@ -336,7 +336,7 @@ if PING_CLIENT:
         test_array[13][1] = "FAIL"
 
 # Telnet Client Test
-if TELNET_CLIENT:
+if TELNET_CLIENT and 'TELNET_CLIENT' in config_dict and config_dict['TELNET_CLIENT']:
     # Opening message for the test
     msg = '\nAttempting to telnet from TEST_DEVICE: ' + \
            TEST_DEVICE + ' to mav6: ' + mav6_ip
@@ -352,13 +352,13 @@ if TELNET_CLIENT:
         test_array[14][1] = "FAIL"
  
 # SSH Client Test
-if SSH_CLIENT:
+if SSH_CLIENT and 'SSH_CLIENT' in config_dict and config_dict['SSH_CLIENT']:
     # Opening message for the test
     msg = '\nAttempting to SSH from TEST_DEVICE: ' + \
            TEST_DEVICE + ' to mav6: ' + mav6_ip
     print(colored(msg, "yellow"))
     
-    result = ssh_client(device, mav6_ip, MAV6_USER, MAV6_PASS)
+    result = ssh_client(device, mav6_ip, MAV6_USER, MAV6_PASS, TEST_DEVICE_OS)
 
     if (result):
         print(colored("SSH Client Test Successful\n\n", "green"))
@@ -372,14 +372,14 @@ if SSH_CLIENT:
 # IOSXE Device
 
 # TFTP client Test
-if TFTP_CLIENT:
+if TFTP_CLIENT and 'TFTP_CLIENT' in config_dict and config_dict['TFTP_CLIENT']:
     # Opening message for the test
     msg = '\nAttempting TFTP file transfer from mav6: ' + \
            mav6_ip + ' to TEST_DEVICE: ' + TEST_DEVICE
     print(colored(msg, "yellow"))
 
     result = file_transfer_client(protocol='tftp', device=device, 
-                                  mav6_ip=mav6_ip)
+                                  mav6_ip=mav6_ip, test_device_os=TEST_DEVICE_OS)
     if (result):
         print(colored("TFTP Client Test Successful\n\n", "green"))
         test_array[16][1] = "PASS"
@@ -388,12 +388,13 @@ if TFTP_CLIENT:
         test_array[16][1] = "FAIL"
 
 # FTP Client test
-if FTP_CLIENT:
+if FTP_CLIENT and 'FTP_CLIENT' in config_dict and config_dict['FTP_CLIENT']:
     # Opening message for the test
     msg = '\nAttempting  FTP file transfer from mav6: ' + \
            mav6_ip + ' to TEST_DEVICE: ' + TEST_DEVICE
     print(colored(msg, "yellow"))
-    result = file_transfer_client(protocol='ftp', device=device, mav6_ip=mav6_ip)
+    result = file_transfer_client(protocol='ftp', device=device, mav6_ip=mav6_ip, 
+                                  test_device_os=TEST_DEVICE_OS)
 
     if (result):
         print(colored("FTP Client Test Successful\n\n", "green"))
@@ -403,13 +404,14 @@ if FTP_CLIENT:
         test_array[17][1] = "FAIL"
 
 # HTTP client Test
-if HTTP_CLIENT:
+if HTTP_CLIENT and 'HTTP_CLIENT' in config_dict and config_dict['HTTP_CLIENT']:
     # Opening message for the test
     msg = '\nAttempting HTTP file transfer from mav6: ' + \
            mav6_ip + ' to TEST_DEVICE: ' + TEST_DEVICE
     print(colored(msg, "yellow"))
 
-    result = file_transfer_client(protocol='http', device=device, mav6_ip=mav6_ip)
+    result = file_transfer_client(protocol='http', device=device, mav6_ip=mav6_ip, 
+                                  test_device_os=TEST_DEVICE_OS)
 
     if (result):
         print(colored("HTTP Client Test Successful\n\n", "green"))
@@ -420,14 +422,15 @@ if HTTP_CLIENT:
 
 # HTTPS client Test
 
-if HTTPS_CLIENT:
+if HTTPS_CLIENT and 'HTTPS_CLIENT' in config_dict and config_dict['HTTPS_CLIENT']:
     # Opening message for the test
     msg = '\nAttempting HTTPS file transfer from mav6: ' + \
            mav6_ip + ' to TEST_DEVICE: ' + TEST_DEVICE
     print(colored(msg, "yellow"))
 
     result = file_transfer_client(protocol='https', device=device, 
-                                  mav6_ip=mav6_ip, ca_directory=CA_DIRECTORY)
+                                  mav6_ip=mav6_ip, ca_directory=CA_DIRECTORY,
+                                  test_device_os=TEST_DEVICE_OS)
     if (result):
         print(colored("HTTPS Client Test Successful\n\n", "green"))
         test_array[19][1] = "PASS"
@@ -436,7 +439,7 @@ if HTTPS_CLIENT:
         test_array[19][1] = "FAIL"
 
 # SNMP v2 Trap Test
-if SNMPV2_TRAP:
+if SNMPV2_TRAP and 'SNMPV2_TRAP' in config_dict and config_dict['SNMPV2_TRAP']:
     # Opening message for the test
     msg = '\nAttempting to send an SNMPv2 trap from TEST_DEVICE: ' + \
            TEST_DEVICE + ' to mav6: ' + mav6_ip
@@ -458,7 +461,7 @@ if SNMPV2_TRAP:
         test_array[20][1] = "FAIL"
 
 # SNMP v3 Trap Test
-if SNMPV3_TRAP:
+if SNMPV3_TRAP and 'SNMPV3_TRAP' in config_dict and config_dict['SNMPV3_TRAP']:
     # Opening message for the test
     msg = '\nAttempting to send an SNMPv3 trap from TEST_DEVICE: ' + \
            TEST_DEVICE + ' to mav6: ' + mav6_ip
@@ -480,7 +483,7 @@ if SNMPV3_TRAP:
         test_array[21][1] = "FAIL"
     
 # NTP v4 Client Test
-if NTP_CLIENT:
+if NTP_CLIENT and 'NTP_CLIENT' in config_dict and config_dict['NTP_CLIENT']:
     # Opening message for the test
     msg = '\nAttempting an NTPv4 connection from TEST_DEVICE: ' + \
            TEST_DEVICE + ' to NTP_TEST_SERVER: ' + NTP_TEST_SERVER
@@ -490,7 +493,7 @@ if NTP_CLIENT:
     configure_test_device(device, config_dict, test='NTP_CLIENT')
     sleep(15)
 
-    result = ntp_client(device, NTP_TEST_SERVER)
+    result = ntp_client(device, NTP_TEST_SERVER, test_device_os=TEST_DEVICE_OS)
 
     if (result):
         print(colored("NTPv4 Test Successful\n\n", "green"))
@@ -500,7 +503,7 @@ if NTP_CLIENT:
         test_array[22][1] = "FAIL"
 
 # Syslog Client Test
-if SYSLOG_CLIENT:
+if SYSLOG_CLIENT and 'SYSLOG_CLIENT' in config_dict and config_dict['SYSLOG_CLIENT']:
     # Opening message for the test
     msg = '\nAttempting to send a Syslog message from TEST_DEVICE: ' + \
            TEST_DEVICE + ' to mav6: ' + mav6_ip
@@ -514,7 +517,8 @@ if SYSLOG_CLIENT:
         configure_test_device(device, config_dict, test='SYSLOG_CLIENT', td_configure='td_ipv4_configure')
         #device.configure('logging host ' + mav6_ip )
 
-    result = syslog_client( mav6_ip=mav6_ip, device=device, protocol='syslog')
+    result = syslog_client( mav6_ip=mav6_ip, device=device, protocol='syslog', 
+                           test_device_os=TEST_DEVICE_OS)
 
     # Print Test results to screen
     if (result):
