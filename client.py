@@ -44,21 +44,30 @@ def ping_client(device = '', device_to_ping='', test_device_os='iosxe'):
         return False
 
 
-def perform_ssh(device, ip_address, username, password, test_device_os='iosxe'):
+def perform_ssh_telnet(device, ip_address, username, password, protocol='ssh', test_device_os='iosxe'):
     # This function uses pyATS Dialogs to execute an ssh from device to a test server
     # device - pyATS device object
     # ip_address - ip address to ssh to, should be an Ubuntu server where mav6 lives
     # username/password - need I say more?
+    # protocol - either 'ssh' or 'telnet' depending on the test being performed
     # test_device_os - either 'iosxe' or 'nxos'
 
-    ssh_dict = {
+    if protocol == 'ssh' and test_device_os == 'nxos':
+        cmd = f'ssh {username}@{ip_address}'
+    elif protocol == 'ssh' and test_device_os == 'iosxe':
+        cmd = f'ssh -l {username} {ip_address}'
+    else:
+        cmd = f'telnet {ip_address}'
+    #cmd += f'{ip_address}'
+
+    ssh_telnet_dict = {
                 'pass_timeout_expire_flag': False,
-                'ssh_pass_case_flag': False,
+                'ssh_telnet_pass_case_flag': False,
                 'enable_pass_flag': False
                 }
 
     def pass_timeout_expire():
-        ssh_dict['pass_timeout_expire_flag'] = True
+        ssh_telnet_dict['pass_timeout_expire_flag'] = True
 
     def send_yes(spawn):
         spawn.sendline('yes')
@@ -67,14 +76,16 @@ def perform_ssh(device, ip_address, username, password, test_device_os='iosxe'):
         spawn.sendline(password)
 
     def ssh_pass_case(spawn):
-        ssh_dict['ssh_pass_case_flag'] = True
+        ssh_telnet_dict['ssh_telnet_pass_case_flag'] = True
         # command to exit from the active ssh session from the device prompt itself.
         cli_command = 'exit'
         spawn.sendline(cli_command)
+        
+    def send_login(spawn):
+        spawn.sendline(username)
 
 
     dialog = Dialog([
-
             Statement(pattern=r"Password:\s*timeout expired!",
                       action=pass_timeout_expire,
                       loop_continue=False),
@@ -90,92 +101,26 @@ def perform_ssh(device, ip_address, username, password, test_device_os='iosxe'):
             Statement(pattern=r'Welcome to Ubuntu',
                       action=ssh_pass_case,
                       loop_continue=False),
-
-    ])
-
-    if test_device_os == 'nxos':
-        cmd = f'ssh {username}@'
-    else:
-        cmd = f'ssh -l {username} '
-
-
-    cmd += f'{ip_address}'
-
-    try:
-        device.execute(cmd, reply=dialog, prompt_recovery=True, timeout=40)
-
-    except Exception as e:
-        log.info(f"Error occurred while performing ssh : {e}")
-
-    if ssh_dict['pass_timeout_expire_flag']:
-        return False
-    if ssh_dict['ssh_pass_case_flag']:
-        return True
-    
-    
-def perform_telnet(device, ip_address, username, password):
-    # This function uses pyATS Dialogs to execute a telnet from device to a test server
-    # device - pyATS device object
-    # ip_address - ip address to ssh to, should be an Ubuntu server where mav6 lives
-    # username/password - need I say more?
-    # test_device_os - either 'iosxe' or 'nxos'
-
-    
-    telnet_dict = {
-                'pass_timeout_expire_flag': False,
-                'telnet_pass_case_flag': False,
-                'enable_pass_flag': False
-                }
-
-    def pass_timeout_expire():
-        telnet_dict['pass_timeout_expire_flag'] = True
-
-    def send_pass(spawn):
-        spawn.sendline(password)
-        
-    def send_login(spawn):
-        spawn.sendline(username)
-
-    def telnet_pass_case(spawn):
-        telnet_dict['telnet_pass_case_flag'] = True
-        # command to exit from the active ssh session from the device prompt itself.
-        cli_command = 'exit'
-        spawn.sendline(cli_command)
-
-    dialog = Dialog([
-
-            Statement(pattern=r'Welcome to Ubuntu',
-                      action=telnet_pass_case,
-                      loop_continue=False),
-            Statement(pattern=r"Password:\s*timeout expired!",
-                      action=pass_timeout_expire,
-                      loop_continue=False),
-            Statement(pattern=r"Password:",
-                      action=send_pass,
-                      loop_continue=True),
             Statement(pattern=r"login:",
                       action=send_login,
                       loop_continue=True),
-            
     ])
-
-    cmd = f'telnet {ip_address}'
 
     try:
         device.execute(cmd, reply=dialog, prompt_recovery=True, timeout=40)
 
     except Exception as e:
-        log.info(f"Error occurred while performing telnet : {e}")
+        log.info(f"Error occurred while performing ssh or telnet : {e}")
 
-    if telnet_dict['pass_timeout_expire_flag']:
+    if ssh_telnet_dict['pass_timeout_expire_flag']:
         return False
-    if telnet_dict['telnet_pass_case_flag']:
+    if ssh_telnet_dict['ssh_telnet_pass_case_flag']:
         return True
-
+    
 
 def telnet_client(device, server_ip, user, secret):
     # telnet client test function
-    if (perform_telnet(device, server_ip, user, secret)):
+    if (perform_ssh_telnet(device, server_ip, user, secret, 'telnet')):
         return True
     else:
         return False
@@ -183,13 +128,18 @@ def telnet_client(device, server_ip, user, secret):
 
 def ssh_client(device, server_ip, user, secret, test_device_os='iosxe'):
     # ssh client test function
-    if (perform_ssh(device, server_ip, user, secret, test_device_os)):
+    if (perform_ssh_telnet(device, server_ip, user, secret, 'ssh', test_device_os)):
         return True
     else:
         return False
 
 
 def ntp_client(device='', ntp_server='', test_device_os='iosxe'):
+    # ntp_client tries to associate with an ntp server
+    # device - pyATS device object
+    # ntp_server - configure test device to connect to this ntp_server ip
+    # test_device_os - either 'iosxe' or 'nxos'
+
     show_run = device.execute("show run | include ntp")
     if test_device_os == 'nxos':
         show_ntp_assoc = device.execute("show ntp peer-status")
@@ -202,61 +152,21 @@ def ntp_client(device='', ntp_server='', test_device_os='iosxe'):
         else:
             print('NTP server configure but not associated: \n' + show_ntp_assoc)
             print('It may take more time for the ntp client to associate to the server.')
-            print('or you may need to remove another ntp server.')
+            print('or you may need to remove another ntp server and restest.')
             return False
     else:
         return False
 
 
-def snmp_trap_send(destination='', port=162, snmp_version = 2):
-    # snmp_trap_send is strictly for testing the trap receiver
-    #   It may never be used in normal mav6 operation
-    #   in Normal operation the routers should send the traps to the reciever
-    # destination - The ip of the trap will be sent to
-    # port - The port the trap will be sent to
-    # snmp_version - 2 or 3
-    if (snmp_version == 2):
-        iterator = sendNotification (
-            SnmpEngine(),
-            CommunityData('FEDcivrw', mpModel=0), #for version 2c
-            UdpTransportTarget((destination, port)) if ip_version(destination) == 4 else Udp6TransportTarget((destination, port)),
-            ContextData(),
-            'trap',
-            NotificationType(
-                ObjectIdentity('1.3.6.1.6.3.1.1.5.2')
-            ).addVarBinds(
-                ('1.3.6.1.6.3.1.1.4.3.0', '1.3.6.1.4.1.20408.4.1.1.2'),
-                ('1.3.6.1.2.1.1.1.0', OctetString('my system'))
-            ).loadMibs(
-                'SNMPv2-MIB'
-            )
-        )
-    elif(snmp_version == 3):
-        # send notification for v3
-        iterator = sendNotification (
-            SnmpEngine(rfc1902.OctetString(hexValue='80000009030000c1b1129980')),
-            UsmUserData('mavuser'),
-            UdpTransportTarget((destination, port)) if ip_version(destination) == 4 else Udp6TransportTarget((destination, port)),
-           ContextData(),
-            'trap',
-            NotificationType(
-                ObjectIdentity('1.3.6.1.6.3.1.1.5.2')
-            ).addVarBinds(
-                ('1.3.6.1.6.3.1.1.4.3.0', '1.3.6.1.4.1.20408.4.1.1.2'),
-                ('1.3.6.1.2.1.1.1.0', OctetString('my system'))
-            ).loadMibs(
-                'SNMPv2-MIB'
-            )
-        )
-    else:
-        print('Unknow snmp version!')
-        exit()
-
-    errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
-    if(errorIndication):
-        print(errorIndication)
-
 def snmp_trap_client(snmp_version=2, comm_uname='', mav6_ip='', device='' ):
+    # snmp_trap_client starts a separate snmp trap reciever process and triggers the test device
+    #   to send a trap to it.  Returns true on success.
+    # snmp_version - 2 or 3 type int
+    # comm_uname - is the community for snmpv2 or uname 
+    # mav6_ip - ipv4 or v6 address to bind the snmp trap reciever to
+    # device - pyats device object of test device
+    # protocol - 'syslog' for now, although this function may support others in the future
+    # test_device_os - 'iosxe' or 'nxos;
 
     q = Queue()
     snmp_trap_receiver_process = Process(target=snmp_start_trap_receiver, name='snmptrapreceiver', 
@@ -265,8 +175,6 @@ def snmp_trap_client(snmp_version=2, comm_uname='', mav6_ip='', device='' ):
     print('starting snmp trap receiver process, version ' + str(snmp_version))
     snmp_trap_receiver_process.start()
     sleep(5)
-    # Below sends a test trap from mav6 to mav6 trap receiver, leave commented unless testing
-    #snmp_trap_send(destination=mav6_ip, port=162, snmp_version=snmp_version)
     
     # Trigger an event to send a trap
     print('Triggering Test Device to send a trap')
@@ -285,9 +193,7 @@ def snmp_trap_client(snmp_version=2, comm_uname='', mav6_ip='', device='' ):
     received_snmp = False
     while(not q.empty()):
         message = q.get()
-        if('my system' in message):
-            print('SNMP message arrived at receiver from snmp_trap_send test function') 
-        elif('netconf' in message):
+        if('netconf' in message):
             print('SNMP message arrived at receiver from TEST_DEVICE')
             received_snmp = True
         elif('1.3.6.1.4.1.9.9.43.2.0.2' in message):
@@ -395,15 +301,23 @@ def file_transfer_client(protocol='', device='',
         return False
     
 def syslog_client(mav6_ip='', device='', protocol='syslog', test_device_os='iosxe'):
+    # syslog_client starts a separate syslog server process and triggers the test device
+    #   to send a syslog mesage to it.  Returns true on success.
+    # mav6_ip - ipv4 or v6 address to bind the syslog server to
+    # device - pyats device object of test device
+    # protocol - 'syslog' for now, although this function may support others in the future
+    # test_device_os - 'iosxe' or 'nxos;
 
+    # Spawning syslog server process
     q = Queue()
     embedded_server_process = Process(target=start_notification_server, name='embeddedserver', 
                                     args=(protocol, mav6_ip, q,))
-
     print('spawning ' + protocol + ' server process')
     embedded_server_process.start()
     sleep(5)
 
+    # Trigger test device to send a syslog message  Note: it took effort to get 
+    #  nxos to send a message in a timely manner, rate-limit command was key
     print("Triggering test device to send a syslog message (up to 30s)")
     if test_device_os == 'nxos':
         # This will trigger for nxos
