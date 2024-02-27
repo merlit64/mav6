@@ -73,41 +73,40 @@ Starting with the Virtual Environment:
 - pip install -r requirements.txt
 
 
-### Oprional Development Environment ###
+### Optional Development Environment ###
 Install VS Code or IDE of choice, if desired.  An IDE is only needed if you want to debug:
 - sudo snap install --classic code
 
-if using vscode
-- code .
+If using vscode:
 - The moment you access your first .py file, VSCode will ask you to install the Python Extension Pack... do it
-- Ctrl-Shift-P Select Python Interpreter... make sure you choose mav6-env
+- Ctrl-Shift-P Select Python Interpreter... make sure you choose mav6-env 
 - Debug... create launch.json file and add "sudo": true to the end
 
 
 ## MAV6 Setup ##
 - change ’sample_secrets.py’ to ’secrets_1.py’ and configure appropriately with authentication info
-  - copy sample_secrets.py file to secrets.py
-  - update TEST_DEVICE to the proper IPv4 or IPv6 address (depending on which you intend to test, required) 
-  - update TEST_DEVICE HOSTNAME to the hostname of the test device (required)  Note: The hostname should already be configured on the test device
-  - update SNMP_USER, AUTH_KEY and PRIV_KEY if you intend to test SNMP v3 (optional)
-  - update COM_RO and COM_RW if you intend to test SNMP v2 (optional)
-  - update CLI_USER and USER_PASS to allow mav6 to attach to the test_device via SSH (required)
-  - update MAV6_IPV4 and MAV6_IPV6 MAV6_USER and MAV6_PASS (required)
-  - update NTP_TEST_SERVER, this can be any ntp server as long as it is accessible by the test box, it must match the ip version being used
+- update TEST_DEVICE to the proper IPv4 or IPv6 address (depending on which you intend to test, required) 
+- update TEST_DEVICE HOSTNAME to the hostname of the test device (required)  Note: The hostname should already be configured on the test device
+- update SNMP_USER, AUTH_KEY and PRIV_KEY if you intend to test SNMP v3 (optional)
+- update COM_RO and COM_RW if you intend to test SNMP v2 (optional)
+- update CLI_USER and USER_PASS to allow mav6 to attach to the test_device via SSH (required)
+- update MAV6_IPV4 and MAV6_IPV6 MAV6_USER and MAV6_PASS (required)
+- update NTP_TEST_SERVER, this can be any ntp server as long as it is accessible by the test box, it must match the ip version being used
   
 Note: These ipv4 and ipv6 addresses and the hostname, cli user/pass should already be configured on the TEST_DEVICE.  SNMP parameters will get pushed to the test device by Mav6 and need not be configured in advance. All required protocol servers for the tests are embedded on mav6 and will be spun up dynamically during the test that requires them with the exception of the NTP server.  The user need only provide an IPv4 and/or IPv6 address for an NTP server that the test device can reach.
 
-- configure test_configuration to indicate which tests will execute
-- Make sure there is communication between mav 6 and the test device via ipv4 and ipv6
+- configure test_configuration to indicate which tests will execute (default tests are ping client and ping server)
+- Make sure there is communication between mav6 and the test device via ipv4 and ipv6
 
 
 ## Running MAV6 ##
 To run Mav6:
 - change to ~/Doucments/mav6 directory, cd ~/Documents/mav6
-- Activate the virtual environment (if ont already activated) with source ../mav6-env/bin/activate
+- Activate the virtual environment (if not already activated) with source ../mav6-env/bin/activate
 - Run with sudo ../mav6-env/bin/python mav6_main.py
 Note: sudo is required because ubuntu requires su access to open well-known TCP and UDP ports
 Alternatively run mav6 through VS Code's debug environment.  "sudo": true must me a line in the launch.json file.
+- Once mav6 finishes testing it will create a new file 'test_results.txt' contaning a table of test results
 
 
 
