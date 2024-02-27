@@ -3,6 +3,7 @@
 from time import sleep
 import random
 from multiprocessing import Process, Queue
+import ipaddress
 
 ### LOCAL FILES ###
 from mav6utils import *
@@ -140,19 +141,21 @@ def ntp_client(device='', ntp_server='', test_device_os='iosxe'):
     # ntp_server - configure test device to connect to this ntp_server ip
     # test_device_os - either 'iosxe' or 'nxos'
 
+    ntp_server = ipaddress.ip_address(ntp_server)
     show_run = device.execute("show run | include ntp")
     if test_device_os == 'nxos':
         show_ntp_assoc = device.execute("show ntp peer-status")
     else:
         show_ntp_assoc = device.execute("show ntp associations")
-    if (ntp_server in show_run):
-        if (('*~' + ntp_server) in show_ntp_assoc) or (('*' + ntp_server) in show_ntp_assoc):
+    if (ntp_server.compressed.upper() in show_run):
+        if (('*~' + ntp_server.compressed.upper()) in show_ntp_assoc) or \
+           (('*' + ntp_server.compressed.upper()) in show_ntp_assoc):
             print('NTP server configure and associated: \n' + show_ntp_assoc)
             return True
         else:
             print('NTP server configure but not associated: \n' + show_ntp_assoc)
             print('It may take more time for the ntp client to associate to the server.')
-            print('or you may need to remove another ntp server and restest.')
+            print('or you may need to remove another ntp server and retest.')
             return False
     else:
         return False

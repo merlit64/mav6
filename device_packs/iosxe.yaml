@@ -77,7 +77,6 @@ tests:
       snmp-server enable traps
       snmp-server enable traps config
       snmp-server host {{mav6_ip}} ver 3 priv {{SNMP_USER}}
-      snmp-server host {{mav6_ip}} use-vrf default
   NTP_CLIENT:
     td_configure: |
       ntp server {{NTP_TEST_SERVER}}
