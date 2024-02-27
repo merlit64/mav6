@@ -147,9 +147,9 @@ def ntp_client(device='', ntp_server='', test_device_os='iosxe'):
         show_ntp_assoc = device.execute("show ntp peer-status")
     else:
         show_ntp_assoc = device.execute("show ntp associations")
-    if (ntp_server.compressed.upper() in show_run):
+    if (ntp_server.compressed.upper() in show_run or ntp_server.compressed.lower() in show_run):
         if (('*~' + ntp_server.compressed.upper()) in show_ntp_assoc) or \
-           (('*' + ntp_server.compressed.upper()) in show_ntp_assoc):
+           (('*' + ntp_server.compressed.lower()) in show_ntp_assoc):
             print('NTP server configure and associated: \n' + show_ntp_assoc)
             return True
         else:

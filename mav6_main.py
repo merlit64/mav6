@@ -468,7 +468,7 @@ if NTP_CLIENT and 'NTP_CLIENT' in config_dict and config_dict['NTP_CLIENT']:
 
     # Configure test device as ntp client
     configure_test_device(device, config_dict, test='NTP_CLIENT')
-    sleep(20)
+    sleep(30)
 
     result = ntp_client(device, NTP_TEST_SERVER, test_device_os=TEST_DEVICE_OS)
 
