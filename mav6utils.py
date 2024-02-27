@@ -149,16 +149,15 @@ def del_from_mav(filename=''):
 
 
 def render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data={}, testbed_template=TESTBED_TEMPLATE):
+    # Render the pyATS testbed.yaml file from TESTBED_TEMPLATE and testbed_data
+    # testbed_filename - what the final pyATS yaml file will be named and where it will be stored
+    # testbed_data - a dictionary that will be used to render the template's parameters
+    # testbed_template - the template that will be rendered with the data to get the final yaml file
 
     #split testbed_filename up into 2 strings, one containing the directory, the other the filename
-    testbed_directory = ''
-    filename_index = 0
-    subdirectory_count = 0
-    while (testbed_filename.find('/', filename_index, len(testbed_filename)) != -1 ):
-        filename_index = testbed_filename.find('/') + 1
-        testbed_directory = testbed_directory + testbed_filename[:filename_index]
-        testbed_filename = testbed_filename[filename_index:]
-        subdirectory_count+=1
+    subdirectory_count = testbed_filename.count('/')
+    testbed_directory, testbed_filename = testbed_filename.rsplit('/', 1)
+    testbed_directory += '/'
 
     # del and rebuild pyATS directory and testbed.yaml
     if dir_on_mav(testbed_directory):
@@ -173,10 +172,9 @@ def render_testbed(testbed_filename='pyATS/testbed.yaml', testbed_data={}, testb
                             CLI_USER = CLI_USER, CLI_PASS=CLI_PASS, TEST_DEVICE_OS=TEST_DEVICE_OS)
 
     # Save the YAML file
-    yaml_file = open(testbed_filename, 'w')
-    yaml_file.write(testbed_yaml)
-    yaml_file.close()
-
+    with open(testbed_filename, 'w') as yaml_file:
+        yaml_file.write(testbed_yaml)
+ 
     while(subdirectory_count != 0):
         subdirectory_count-=1
         os.chdir('..')
@@ -201,3 +199,30 @@ def configure_test_device(device, config_dict, test,
         if td_configure in config_dict[test]:
             print('Pre-test Test Device configuration:\n' + config_dict[test][td_configure] )
             device.configure(config_dict[test][td_configure])
+
+def test_array_init():
+    test_array = np.array([["Test", "Result"],
+                       ["PING_SERVER", "N/A"],
+                       ["TELNET_SERVER", "N/A"],
+                       ["SSH_SERVER", "N/A"],
+                       ["SCP_SERVER", "N/A"],
+                       ["TFTP_SERVER", "N/A"],
+                       ["HTTP_SERVER", "N/A"],
+                       ["HTTPS_SERVER", "N/A"],
+                       ["SNMPV2_READ", "N/A"],
+                       ["SNMPV2_WRITE", "N/A"],
+                       ["SNMPV3_READ", "N/A"],
+                       ["SNMPV3_WRITE", "N/A"],
+                       ["NTP_SERVER", "N/A"],
+                       ["PING_CLIENT", "N/A"],
+                       ["TELNET_CLIENT", "N/A"],
+                       ["SSH_CLIENT", "N/A"],
+                       ["TFTP_CLIENT", "N/A"],
+                       ["FTP_CLIENT", "N/A"],
+                       ["HTTP_CLIENT", "N/A"],
+                       ["HTTPS_CLIENT", "N/A"],
+                       ["SNMPV2_TRAP", "N/A"],
+                       ["SNMPV3_TRAP", "N/A"],
+                       ["NTP_CLIENT", "N/A"],
+                       ["SYSLOG_CLIENT", "N/A"]])
+    return test_array

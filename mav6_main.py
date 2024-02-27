@@ -23,32 +23,9 @@ from termcolor import colored
 # I.E. Telnet server test means the Test device is acting as the TFTP Server
 
 #initialize numpy array for test results output
-test_array = np.array([["Test", "Result"],
-                       ["PING_SERVER", "N/A"],
-                       ["TELNET_SERVER", "N/A"],
-                       ["SSH_SERVER", "N/A"],
-                       ["SCP_SERVER", "N/A"],
-                       ["TFTP_SERVER", "N/A"],
-                       ["HTTP_SERVER", "N/A"],
-                       ["HTTPS_SERVER", "N/A"],
-                       ["SNMPV2_READ", "N/A"],
-                       ["SNMPV2_WRITE", "N/A"],
-                       ["SNMPV3_READ", "N/A"],
-                       ["SNMPV3_WRITE", "N/A"],
-                       ["NTP_SERVER", "N/A"],
-                       ["PING_CLIENT", "N/A"],
-                       ["TELNET_CLIENT", "N/A"],
-                       ["SSH_CLIENT", "N/A"],
-                       ["TFTP_CLIENT", "N/A"],
-                       ["FTP_CLIENT", "N/A"],
-                       ["HTTP_CLIENT", "N/A"],
-                       ["HTTPS_CLIENT", "N/A"],
-                       ["SNMPV2_TRAP", "N/A"],
-                       ["SNMPV3_TRAP", "N/A"],
-                       ["NTP_CLIENT", "N/A"],
-                       ["SYSLOG_CLIENT", "N/A"]])
+test_array = test_array_init()
 
-# Build pyATS Testbed environment from the secrets file configuration settings
+# Render pyATS Testbed yaml from the secrets file configuration settings
 mav6_ip = MAV6_IPV4 if ip_version(TEST_DEVICE) == 4 else MAV6_IPV6
 
 testbed_data = { 'TEST_DEVICE':TEST_DEVICE, 'TEST_DEVICE_HOSTNAME':TEST_DEVICE_HOSTNAME, 

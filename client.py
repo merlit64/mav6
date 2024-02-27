@@ -1,8 +1,16 @@
-from mav6utils import *
+######## IMPORTED LIBRARIES ########
+### STANDARD LIBRARIES ###
 from time import sleep
 import random
-from termcolor import colored
 from multiprocessing import Process, Queue
+
+### LOCAL FILES ###
+from mav6utils import *
+from embedded_fs import *
+from ca import *
+
+### PYPI LIBRARIES ###
+from termcolor import colored
 
 # pyATS
 from pyats.topology import loader
@@ -11,21 +19,20 @@ from genie.libs.sdk.apis.iosxe.ntp.configure import *
 from unicon.eal.dialogs import Dialog, Statement
 
 # for SNMP tests
-#from pysnmp.hlapi import *
+from pysnmp.hlapi import *
 #from pysnmp.carrier.asynsock.dgram import udp, udp6
 #from pysnmp.entity import engine, config
 #from pysnmp.entity.rfc3413 import ntfrcv, context, cmdrsp
 from pysnmp.proto import rfc1902
 
 
-# Embedded file server function import
-from embedded_fs import *
-from ca import *
-
-
 def ping_client(device = '', device_to_ping='', test_device_os='iosxe'):
     # ping_client connects to the test device and tries to ping an
     #   ip address from there.
+    # device - pyATS device object
+    # device_to_ping - should be and ipv6 or ipv4 address
+    # test_device_os - either 'iosxe' or 'nxos'
+
     if (ip_version(device_to_ping) == 6) and test_device_os == 'nxos':
         ping_result = device.ping6(device_to_ping)
     else:
@@ -36,8 +43,14 @@ def ping_client(device = '', device_to_ping='', test_device_os='iosxe'):
     else:
         return False
 
+
 def perform_ssh(device, ip_address, username, password, test_device_os='iosxe'):
-    
+    # This function uses pyATS Dialogs to execute an ssh from device to a test server
+    # device - pyATS device object
+    # ip_address - ip address to ssh to, should be an Ubuntu server where mav6 lives
+    # username/password - need I say more?
+    # test_device_os - either 'iosxe' or 'nxos'
+
     ssh_dict = {
                 'pass_timeout_expire_flag': False,
                 'ssh_pass_case_flag': False,
@@ -101,6 +114,12 @@ def perform_ssh(device, ip_address, username, password, test_device_os='iosxe'):
     
     
 def perform_telnet(device, ip_address, username, password):
+    # This function uses pyATS Dialogs to execute a telnet from device to a test server
+    # device - pyATS device object
+    # ip_address - ip address to ssh to, should be an Ubuntu server where mav6 lives
+    # username/password - need I say more?
+    # test_device_os - either 'iosxe' or 'nxos'
+
     
     telnet_dict = {
                 'pass_timeout_expire_flag': False,
@@ -154,7 +173,6 @@ def perform_telnet(device, ip_address, username, password):
         return True
 
 
-
 def telnet_client(device, server_ip, user, secret):
     # telnet client test function
     if (perform_telnet(device, server_ip, user, secret)):
@@ -169,7 +187,8 @@ def ssh_client(device, server_ip, user, secret, test_device_os='iosxe'):
         return True
     else:
         return False
-        
+
+
 def ntp_client(device='', ntp_server='', test_device_os='iosxe'):
     show_run = device.execute("show run | include ntp")
     if test_device_os == 'nxos':
@@ -188,7 +207,6 @@ def ntp_client(device='', ntp_server='', test_device_os='iosxe'):
     else:
         return False
 
-    
 
 def snmp_trap_send(destination='', port=162, snmp_version = 2):
     # snmp_trap_send is strictly for testing the trap receiver
@@ -201,11 +219,7 @@ def snmp_trap_send(destination='', port=162, snmp_version = 2):
         iterator = sendNotification (
             SnmpEngine(),
             CommunityData('FEDcivrw', mpModel=0), #for version 2c
-            #UsmUserData('v3user', authKey='C1sco123!', privKey='C1sco123!', 
-            #            authProtocol=usmHMACSHAAuthProtocol, privProtocol=usmAesCfb128Protocol),
             UdpTransportTarget((destination, port)) if ip_version(destination) == 4 else Udp6TransportTarget((destination, port)),
-            #UdpTransportTarget((destination, port)),
-            # Udp6TransportTarget((destination, port)),  # for IPv6 transport
             ContextData(),
             'trap',
             NotificationType(
@@ -223,9 +237,7 @@ def snmp_trap_send(destination='', port=162, snmp_version = 2):
             SnmpEngine(rfc1902.OctetString(hexValue='80000009030000c1b1129980')),
             UsmUserData('mavuser'),
             UdpTransportTarget((destination, port)) if ip_version(destination) == 4 else Udp6TransportTarget((destination, port)),
-            # UdpTransportTarget((destination, port)),
-            # Udp6TransportTarget((destination, port)),  # for IPv6 transport
-            ContextData(),
+           ContextData(),
             'trap',
             NotificationType(
                 ObjectIdentity('1.3.6.1.6.3.1.1.5.2')
