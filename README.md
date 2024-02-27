@@ -1,6 +1,6 @@
 # Managment Plane Application IPv6 (MAV6) #
 
-MAV6 is an IPv6 testing application for Cisco networking devices. The objective of MAV6 is to verify compatibility of managment plane protocols in an IPv6 environment. MAV6 requires an Ubuntu test server to conduct testing on a IPv6 device. The test server and test device take turns acting as a server and client in each managment plane test. MAV6 produces a table of all test results as pass/fail. 
+MAV6 is an IPv6 testing application for Cisco networking devices. The objective of MAV6 is light testing to verify compatibility of managment plane protocols in an IPv6 environment. The intention is to build field/customer confidence that IPv6 will work in their environments.  MAV6 requires an Ubuntu test server to conduct testing on a IPv6 device. The test server and test device take turns acting as a server and client in each managment plane test. MAV6 produces a table of all test results as pass/fail. We recommend implementing your test device with IPv4 first, ensuring that all of you managementplane protocols work properly in that environment, then testing with IPv6 expecting matching results.
 *Note: Test Device will be reconfigured during testing. Do not use a production device. Assume all configurations on the Test Device will be lost.
 
 
