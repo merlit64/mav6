@@ -141,24 +141,29 @@ def ntp_client(device='', ntp_server='', test_device_os='iosxe'):
     # ntp_server - configure test device to connect to this ntp_server ip
     # test_device_os - either 'iosxe' or 'nxos'
 
+    retries = 3    
     ntp_server = ipaddress.ip_address(ntp_server)
     show_run = device.execute("show run | include ntp")
     if test_device_os == 'nxos':
         show_ntp_assoc = device.execute("show ntp peer-status")
     else:
         show_ntp_assoc = device.execute("show ntp associations")
+
     if (ntp_server.compressed.upper() in show_run or ntp_server.compressed.lower() in show_run):
-        if (('*~' + ntp_server.compressed.upper()) in show_ntp_assoc) or \
-           (('*' + ntp_server.compressed.lower()) in show_ntp_assoc):
-            print('NTP server configure and associated: \n' + show_ntp_assoc)
-            return True
-        else:
-            print('NTP server configure but not associated: \n' + show_ntp_assoc)
-            print('It may take more time for the ntp client to associate to the server.')
-            print('or you may need to remove another ntp server and retest.')
-            return False
+        while(retries):
+            if (('*~' + ntp_server.compressed.upper()) in show_ntp_assoc) or \
+            (('*' + ntp_server.compressed.lower()) in show_ntp_assoc):
+                print('NTP server configure and associated: \n' + show_ntp_assoc)
+                return True
+            else:
+                print('NTP server configure but not associated: \n' + show_ntp_assoc)
+                print('Giving it a little more time and trying again...\n')
+                retries -= 1
+                if (retries > 0 ):
+                    sleep(15)
     else:
         return False
+    return False
 
 
 def snmp_trap_client(snmp_version=2, comm_uname='', mav6_ip='', device='' ):
@@ -341,6 +346,7 @@ def syslog_client(mav6_ip='', device='', protocol='syslog', test_device_os='iosx
     else:
         # This will trigger for iosxe
         device.configure('')
+        sleep(5)
     
     result=False
     while(not q.empty()):
