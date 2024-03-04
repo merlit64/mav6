@@ -102,7 +102,7 @@ def start_server(transfer_protocol='tftp', ip=''):
         print('No embedded server for ' + transfer_protocol)
 
 
-def snmp_start_trap_receiver(q, snmp_version=2, ip='', port=162, community=''):
+def snmp_start_trap_receiver(q, snmp_version=2, ip='', port=162, comm_uname=''):
     # snmp_start_trap_receiver will be called as its own process
     #   It starts a MAV6 embedded trap reciever that will
     #   collect SNMP traps from the test device
@@ -111,6 +111,7 @@ def snmp_start_trap_receiver(q, snmp_version=2, ip='', port=162, community=''):
     # snmp_version - 2 or 3
     # ip - ip address (v4 or v6) the MAV6 trap receiver will listen on
     # port - The port the MAV6 trap receiver will listen on
+    # comm_uname - Is the snmp community for ver 2, or snmp username for v3
 
     def cbFun(snmpEngine, stateReference, contextEngineId, contextName, varBinds, cbCtx):
         # Call back function, This runs when a trap is received
@@ -131,10 +132,10 @@ def snmp_start_trap_receiver(q, snmp_version=2, ip='', port=162, community=''):
 
     if (snmp_version == 2):
         print('starting snmp trap receiver v2...')
-        config.addV1System(snmp_engine, 'my-area', community)
+        config.addV1System(snmp_engine, 'my-area', comm_uname)
     elif (snmp_version == 3):
         print('starting snmp trap receiver v3...')
-        config.addV3User(snmp_engine, 'mav6user',
+        config.addV3User(snmp_engine, comm_uname,
                          authProtocol= config.usmHMACSHAAuthProtocol, authKey='C1sco123!',
                          privProtocol= config.usmAesCfb128Protocol, privKey='C1sco123!',
                          securityEngineId=rfc1902.OctetString(hexValue='800000099900000987654321') )

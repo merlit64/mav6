@@ -170,7 +170,7 @@ def snmp_trap_client(snmp_version=2, comm_uname='', mav6_ip='', device='' ):
     # snmp_trap_client starts a separate snmp trap reciever process and triggers the test device
     #   to send a trap to it.  Returns true on success.
     # snmp_version - 2 or 3 type int
-    # comm_uname - is the community for snmpv2 or uname 
+    # comm_uname - is the community for snmpv2 or snmp username for snmpv3 
     # mav6_ip - ipv4 or v6 address to bind the snmp trap reciever to
     # device - pyats device object of test device
     # protocol - 'syslog' for now, although this function may support others in the future
