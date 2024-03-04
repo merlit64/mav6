@@ -448,7 +448,7 @@ if SNMPV3_TRAP and 'SNMPV3_TRAP' in config_dict and config_dict['SNMPV3_TRAP']:
     configure_test_device(device, config_dict, test='SNMPV3_TRAP')
     sleep(30)
 
-    result = snmp_trap_client(snmp_version=3, comm_uname=COM_RW, mav6_ip=mav6_ip, 
+    result = snmp_trap_client(snmp_version=3, comm_uname=SNMP_USER, mav6_ip=mav6_ip, 
                               device=device)
 
     # Print Test results to screen
